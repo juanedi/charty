@@ -1,6 +1,6 @@
 module Charty exposing (lineChart, config)
 
-import SelectList exposing (include, maybe)
+import Charty.SelectList as SL exposing (include, maybe)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Svg.Events as Events
@@ -82,7 +82,7 @@ drawPoint cfg point =
             Maybe.map (\f -> event (f point)) setting
     in
         circle
-            (SelectList.select
+            (SL.select
                 [ include <| cx (toString x)
                 , include <| cy (toString y)
                 , include <| r "10"

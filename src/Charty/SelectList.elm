@@ -1,4 +1,4 @@
-module SelectList exposing (..)
+module Charty.SelectList exposing (..)
 
 import List
 

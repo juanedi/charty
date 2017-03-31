@@ -1,4 +1,4 @@
-module Main exposing (..)
+module LineChartExample exposing (..)
 
 import Charty
 import Html exposing (Html, div, text)
@@ -41,7 +41,7 @@ update msg model =
 
 chartCfg =
     Charty.config
-        { drawPoints = False
+        { drawPoints = True
         , onMouseOver = Nothing
         , onMouseOut = Nothing
         }
