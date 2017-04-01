@@ -39,12 +39,12 @@ update msg model =
             ( Nothing, Cmd.none )
 
 
-chartCfg =
-    Charty.LineChart.config
-        { drawPoints = False
-        , onMouseOver = Nothing
-        , onMouseOut = Nothing
-        }
+chartConfig : Charty.LineChart.Config Msg
+chartConfig =
+    { drawPoints = False
+    , onMouseOver = Nothing
+    , onMouseOut = Nothing
+    }
 
 
 view : Model -> Html Msg
@@ -59,7 +59,7 @@ view model =
             [ Html.Attributes.style [ ( "width", "100%" ), ( "height", "100%" ) ] ]
             [ Html.div
                 [ Html.Attributes.style [ ( "height", "70vh" ), ( "margin", "0 auto" ) ] ]
-                [ Charty.LineChart.draw chartCfg data
+                [ Charty.LineChart.draw chartConfig data
                 , Html.div [] [ Html.text (Maybe.withDefault "Boo!" model) ]
                 ]
             ]

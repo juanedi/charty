@@ -1,4 +1,4 @@
-module Charty.LineChart exposing (draw, config)
+module Charty.LineChart exposing (draw, Config)
 
 import Charty exposing (DataPoint, Transform, calculateTransform)
 import Charty.SelectList as SL exposing (include, maybe)
@@ -7,29 +7,32 @@ import Svg.Attributes exposing (..)
 import Svg.Events as Events
 
 
-type Cfg msg
-    = Cfg
-        { drawPoints : Bool
-        , onMouseOver : Maybe (DataPoint -> msg)
-        , onMouseOut : Maybe (DataPoint -> msg)
-        }
+type alias Series =
+    List DataPoint
 
 
-config record =
-    Cfg record
+type alias Dataset =
+    List Series
 
 
-draw : Cfg msg -> List (List DataPoint) -> Svg msg
-draw cfg series =
+type alias Config msg =
+    { drawPoints : Bool
+    , onMouseOver : Maybe (DataPoint -> msg)
+    , onMouseOut : Maybe (DataPoint -> msg)
+    }
+
+
+draw : Config msg -> Dataset -> Svg msg
+draw cfg dataset =
     let
         transform =
-            series |> List.concat |> calculateTransform
+            dataset |> List.concat |> calculateTransform
     in
         svg
             [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
             [ background
             , axis
-            , g [] (List.map (drawSeries cfg transform) series)
+            , g [] (List.map (drawSeries cfg transform) dataset)
             ]
 
 
@@ -46,37 +49,38 @@ axis =
         ]
 
 
-drawSeries : Cfg msg -> Transform -> List DataPoint -> Svg msg
-drawSeries cfg transform linePoints =
+drawSeries : Config msg -> Transform -> Series -> Svg msg
+drawSeries cfg transform series =
     g [ class "charty-series" ]
-        [ drawLine transform linePoints
-        , drawPoints cfg transform linePoints
+        [ drawLine transform series
+        , drawPoints cfg transform series
         ]
 
 
-drawLine : Transform -> List DataPoint -> Svg msg
-drawLine transform linePoints =
+drawLine : Transform -> Series -> Svg msg
+drawLine transform series =
     let
         pointString ( x, y ) =
             toString x ++ " " ++ toString y
 
         attr =
-            linePoints
+            series
                 |> List.map (transform >> pointString)
                 |> String.join ", "
     in
         polyline [ class "charty-series-line", points attr, stroke "blue", fill "transparent" ] []
 
 
-drawPoints : Cfg msg -> Transform -> List DataPoint -> Svg msg
-drawPoints (Cfg cfg) transform linePoints =
+drawPoints : Config msg -> Transform -> Series -> Svg msg
+drawPoints cfg transform series =
     g [] <|
         if cfg.drawPoints then
-            List.map (drawPoint cfg transform) linePoints
+            List.map (drawPoint cfg transform) series
         else
             []
 
 
+drawPoint : Config msg -> Transform -> DataPoint -> Svg msg
 drawPoint cfg transform point =
     let
         ( x, y ) =
