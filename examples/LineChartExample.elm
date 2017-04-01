@@ -1,6 +1,6 @@
 module LineChartExample exposing (..)
 
-import Charty
+import Charty.LineChart
 import Html exposing (Html, div, text)
 import Html.Attributes
 
@@ -40,7 +40,7 @@ update msg model =
 
 
 chartCfg =
-    Charty.config
+    Charty.LineChart.config
         { drawPoints = False
         , onMouseOver = Nothing
         , onMouseOut = Nothing
@@ -49,15 +49,17 @@ chartCfg =
 
 view : Model -> Html Msg
 view model =
-    Html.div
-        [ Html.Attributes.style [ ( "width", "100%" ), ( "height", "100%" ) ] ]
-        [ Html.div
-            [ Html.Attributes.style [ ( "height", "70vh" ), ( "margin", "0 auto" ) ] ]
-            [ Charty.lineChart
-                chartCfg
-                [ [ ( 0, 0 ), ( 100, 50 ), ( 200, 20 ) ]
-                , [ ( 0, 0 ), ( 100, 100 ) ]
+    let
+        data =
+            [ [ ( 0, 0 ), ( 100, 50 ), ( 200, 20 ) ]
+            , [ ( 0, 0 ), ( 100, 100 ) ]
+            ]
+    in
+        Html.div
+            [ Html.Attributes.style [ ( "width", "100%" ), ( "height", "100%" ) ] ]
+            [ Html.div
+                [ Html.Attributes.style [ ( "height", "70vh" ), ( "margin", "0 auto" ) ] ]
+                [ Charty.LineChart.draw chartCfg data
+                , Html.div [] [ Html.text (Maybe.withDefault "Boo!" model) ]
                 ]
             ]
-        , Html.div [] [ Html.text (Maybe.withDefault "Boo!" model) ]
-        ]
