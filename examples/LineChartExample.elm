@@ -41,7 +41,7 @@ update msg model =
 
 chartCfg =
     Charty.config
-        { drawPoints = True
+        { drawPoints = False
         , onMouseOver = Nothing
         , onMouseOut = Nothing
         }
@@ -55,8 +55,8 @@ view model =
             [ Html.Attributes.style [ ( "height", "70vh" ), ( "margin", "0 auto" ) ] ]
             [ Charty.lineChart
                 chartCfg
-                [ [ ( 150, 400 ), ( 350, 100 ), ( 550, 300 ), ( 850, 200 ) ]
-                , [ ( 150, 800 ), ( 350, 500 ), ( 550, 700 ), ( 850, 600 ) ]
+                [ [ ( 0, 0 ), ( 100, 50 ), ( 200, 20 ) ]
+                , [ ( 0, 0 ), ( 100, 100 ) ]
                 ]
             ]
         , Html.div [] [ Html.text (Maybe.withDefault "Boo!" model) ]
