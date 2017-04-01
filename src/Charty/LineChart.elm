@@ -1,10 +1,21 @@
 module Charty.LineChart exposing (draw, Config)
 
-import Charty exposing (DataPoint, Transform, calculateTransform)
 import Charty.SelectList as SL exposing (include, maybe)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Svg.Events as Events
+
+
+type alias DataPoint =
+    ( Float, Float )
+
+
+type alias SvgPoint =
+    ( Float, Float )
+
+
+type alias Transform =
+    DataPoint -> SvgPoint
 
 
 type alias Series =
@@ -26,19 +37,51 @@ draw : Config msg -> Dataset -> Svg msg
 draw cfg dataset =
     let
         transform =
-            dataset |> List.concat |> calculateTransform
+            calculateTransform dataset
+
+        lines =
+            List.map (drawSeries cfg transform) dataset
     in
-        svg
-            [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
-            [ background
-            , axis
-            , g [] (List.map (drawSeries cfg transform) dataset)
+        svgCanvas
+            [ axis
+            , g [] lines
             ]
 
 
-background : Svg msg
-background =
-    rect [ width "1000", height "1000", fill "#FAFAFA" ] []
+svgCanvas : List (Svg msg) -> Svg msg
+svgCanvas content =
+    let
+        background =
+            Svg.rect [ width "1000", height "1000", fill "#FAFAFA" ] []
+    in
+        Svg.svg
+            [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
+            (background :: content)
+
+
+calculateTransform : Dataset -> Transform
+calculateTransform dataset =
+    let
+        points =
+            List.concat dataset
+
+        xMax =
+            points
+                |> List.map (\( x, y ) -> x)
+                |> List.maximum
+
+        yMax =
+            points
+                |> List.map (\( x, y ) -> y)
+                |> List.maximum
+    in
+        \( x, y ) ->
+            case ( xMax, yMax ) of
+                ( Just xM, Just yM ) ->
+                    ( 50 + (x * 900 / xM), 950 - (y * 900 / yM) )
+
+                _ ->
+                    ( x, y )
 
 
 axis : Svg msg
