@@ -43,7 +43,7 @@ draw cfg dataset =
             List.map (drawSeries cfg transform) dataset
     in
         svgCanvas
-            [ axis
+            [ axis transform
             , g [] lines
             ]
 
@@ -76,24 +76,40 @@ calculateTransform dataset =
 
         ( mYm, mYM ) =
             ( List.minimum ys, List.maximum ys )
+
+        scaleFactor vm vM v =
+            if vm == vM then
+                0.5
+            else
+                (v - vm) / (vM - vm)
     in
         case ( mXm, mXM, mYm, mYM ) of
             ( Just xm, Just xM, Just ym, Just yM ) ->
                 \( x, y ) ->
-                    ( 50 + 900 * (x - xm) / (xM - xm)
-                    , 950 - 900 * (y - ym) / (yM - ym)
+                    ( 50 + 900 * (scaleFactor xm xM x)
+                    , 950 - 900 * (scaleFactor (Basics.min 0 ym) (Basics.max 0 yM) y)
                     )
 
             _ ->
                 identity
 
 
-axis : Svg msg
-axis =
-    g []
-        [ line [ x1 "50", y1 "50", x2 "50", y2 "950", stroke "#CACACA", strokeDasharray "5 5" ] []
-        , line [ x1 "50", y1 "950", x2 "950", y2 "950", stroke "#CACACA", strokeDasharray "5 5" ] []
-        ]
+axis : Transform -> Svg msg
+axis transform =
+    let
+        ( _, zY ) =
+            transform ( 0, 0 )
+
+        axisLine ( vx1, vy1 ) ( vx2, vy2 ) =
+            line [ x1 (toString vx1), y1 (toString vy1), x2 (toString vx2), y2 (toString vy2), stroke "#CACACA", strokeDasharray "5 5" ] []
+
+        xAxis =
+            axisLine ( 50, zY ) ( 950, zY )
+
+        yAxis =
+            axisLine ( 50, 50 ) ( 50, 950 )
+    in
+        g [] [ xAxis, yAxis ]
 
 
 drawSeries : Config msg -> Transform -> Series -> Svg msg
@@ -141,7 +157,7 @@ drawPoint cfg transform point =
                 [ include <| cx (toString x)
                 , include <| cy (toString y)
                 , include <| r "10"
-                , include <| fill "red"
+                , include <| fill "blue"
                 , include <| class "charty-series-point"
                 , maybe <| handle Events.onMouseOver cfg.onMouseOver
                 , maybe <| handle Events.onMouseOut cfg.onMouseOut
