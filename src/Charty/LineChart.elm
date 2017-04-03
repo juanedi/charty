@@ -65,23 +65,27 @@ calculateTransform dataset =
         points =
             List.concat dataset
 
-        xMax =
-            points
-                |> List.map (\( x, y ) -> x)
-                |> List.maximum
+        xs =
+            List.map (\( x, y ) -> x) points
 
-        yMax =
-            points
-                |> List.map (\( x, y ) -> y)
-                |> List.maximum
+        ys =
+            List.map (\( x, y ) -> y) points
+
+        ( mXm, mXM ) =
+            ( List.minimum xs, List.maximum xs )
+
+        ( mYm, mYM ) =
+            ( List.minimum ys, List.maximum ys )
     in
-        \( x, y ) ->
-            case ( xMax, yMax ) of
-                ( Just xM, Just yM ) ->
-                    ( 50 + (x * 900 / xM), 950 - (y * 900 / yM) )
+        case ( mXm, mXM, mYm, mYM ) of
+            ( Just xm, Just xM, Just ym, Just yM ) ->
+                \( x, y ) ->
+                    ( 50 + 900 * (x - xm) / (xM - xm)
+                    , 950 - 900 * (y - ym) / (yM - ym)
+                    )
 
-                _ ->
-                    ( x, y )
+            _ ->
+                identity
 
 
 axis : Svg msg
