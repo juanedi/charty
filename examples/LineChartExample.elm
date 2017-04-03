@@ -41,18 +41,16 @@ update msg model =
 
 chartConfig : Charty.LineChart.Config Msg
 chartConfig =
-    { drawPoints = False
-    , onMouseOver = Nothing
-    , onMouseOut = Nothing
-    }
+    Charty.LineChart.defaults
 
 
 view : Model -> Html Msg
 view model =
     let
         data =
-            [ [ ( 0, 0 ), ( 100, 50 ), ( 200, 20 ) ]
-            , [ ( 0, 0 ), ( 100, 100 ) ]
+            [ [ ( 100000, 3 ), ( 100001, 4 ), ( 100002, 3 ), ( 100003, 2 ), ( 100004, 1 ), ( 100005, 1 ), ( 100006, -1 ) ]
+            , [ ( 100000, 1 ), ( 100001, 2 ), ( 100002, 3 ), ( 100003, 4 ), ( 100004, 3 ), ( 100005, 2 ), ( 100006, 0 ) ]
+            , [ ( 100000, 2 ), ( 100001, 1 ), ( 100002, 0 ), ( 100003, 3 ), ( 100004, -1 ), ( 100005, -2 ), ( 100006, -2 ) ]
             ]
     in
         Html.div

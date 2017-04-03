@@ -1,4 +1,9 @@
-module Charty.LineChart exposing (draw, Config)
+module Charty.LineChart
+    exposing
+        ( draw
+        , Config
+        , defaults
+        )
 
 import Charty.SelectList as SL exposing (include, maybe)
 import Svg exposing (..)
@@ -34,22 +39,29 @@ type alias Config msg =
     { drawPoints : Bool
     , onMouseOver : Maybe (DataPoint -> msg)
     , onMouseOut : Maybe (DataPoint -> msg)
+    , background : Color
+    , colorPalette : List Color
     }
 
 
-colorPalette : List Color
-colorPalette =
-    -- http://www.mulinblog.com/a-color-palette-optimized-for-data-visualization/
-    [ "#4D4D4D" -- gray
-    , "#5DA5DA" -- blue
-    , "#FAA43A" -- orange
-    , "#60BD68" -- green
-    , "#F17CB0" -- pink
-    , "#B2912F" -- brown
-    , "#B276B2" -- purple
-    , "#DECF3F" -- yellow
-    , "#F15854" -- red
-    ]
+defaults : Config msg
+defaults =
+    { drawPoints = True
+    , onMouseOver = Nothing
+    , onMouseOut = Nothing
+    , background = "#FAFAFA"
+    , colorPalette =
+        [ "#4D4D4D" -- gray
+        , "#5DA5DA" -- blue
+        , "#FAA43A" -- orange
+        , "#60BD68" -- green
+        , "#F17CB0" -- pink
+        , "#B2912F" -- brown
+        , "#B276B2" -- purple
+        , "#DECF3F" -- yellow
+        , "#F15854" -- red
+        ]
+    }
 
 
 draw : Config msg -> Dataset -> Svg msg
@@ -60,35 +72,35 @@ draw cfg dataset =
 
         lines =
             dataset
-                |> withColors
+                |> withColors cfg.colorPalette
                 |> List.map (uncurry <| drawSeries cfg transform)
     in
-        svgCanvas
+        svgCanvas cfg.background
             [ axis transform
             , g [] lines
             ]
 
 
-withColors : Dataset -> List ( Color, Series )
-withColors dataset =
+withColors : List Color -> Dataset -> List ( Color, Series )
+withColors palette dataset =
     let
         requiredColors =
             List.length dataset
 
         rec colorList =
             if (List.length colorList < requiredColors) then
-                rec (colorList ++ colorPalette)
+                rec (colorList ++ palette)
             else
                 List.map2 (,) colorList dataset
     in
-        rec colorPalette
+        rec palette
 
 
-svgCanvas : List (Svg msg) -> Svg msg
-svgCanvas content =
+svgCanvas : Color -> List (Svg msg) -> Svg msg
+svgCanvas backgroundColor content =
     let
         background =
-            Svg.rect [ width "1000", height "1000", fill "#FAFAFA" ] []
+            Svg.rect [ width "1000", height "1000", fill backgroundColor ] []
     in
         Svg.svg
             [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
