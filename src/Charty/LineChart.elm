@@ -26,11 +26,30 @@ type alias Dataset =
     List Series
 
 
+type alias Color =
+    String
+
+
 type alias Config msg =
     { drawPoints : Bool
     , onMouseOver : Maybe (DataPoint -> msg)
     , onMouseOut : Maybe (DataPoint -> msg)
     }
+
+
+colorPalette : List Color
+colorPalette =
+    -- http://www.mulinblog.com/a-color-palette-optimized-for-data-visualization/
+    [ "#4D4D4D" -- gray
+    , "#5DA5DA" -- blue
+    , "#FAA43A" -- orange
+    , "#60BD68" -- green
+    , "#F17CB0" -- pink
+    , "#B2912F" -- brown
+    , "#B276B2" -- purple
+    , "#DECF3F" -- yellow
+    , "#F15854" -- red
+    ]
 
 
 draw : Config msg -> Dataset -> Svg msg
@@ -40,12 +59,29 @@ draw cfg dataset =
             calculateTransform dataset
 
         lines =
-            List.map (drawSeries cfg transform) dataset
+            dataset
+                |> withColors
+                |> List.map (uncurry <| drawSeries cfg transform)
     in
         svgCanvas
             [ axis transform
             , g [] lines
             ]
+
+
+withColors : Dataset -> List ( Color, Series )
+withColors dataset =
+    let
+        requiredColors =
+            List.length dataset
+
+        rec colorList =
+            if (List.length colorList < requiredColors) then
+                rec (colorList ++ colorPalette)
+            else
+                List.map2 (,) colorList dataset
+    in
+        rec colorPalette
 
 
 svgCanvas : List (Svg msg) -> Svg msg
@@ -112,16 +148,16 @@ axis transform =
         g [] [ xAxis, yAxis ]
 
 
-drawSeries : Config msg -> Transform -> Series -> Svg msg
-drawSeries cfg transform series =
+drawSeries : Config msg -> Transform -> Color -> Series -> Svg msg
+drawSeries cfg transform color series =
     g [ class "charty-series" ]
-        [ drawLine transform series
-        , drawPoints cfg transform series
+        [ drawLine transform color series
+        , drawPoints cfg transform color series
         ]
 
 
-drawLine : Transform -> Series -> Svg msg
-drawLine transform series =
+drawLine : Transform -> Color -> Series -> Svg msg
+drawLine transform color series =
     let
         pointString ( x, y ) =
             toString x ++ " " ++ toString y
@@ -131,20 +167,20 @@ drawLine transform series =
                 |> List.map (transform >> pointString)
                 |> String.join ", "
     in
-        polyline [ class "charty-series-line", points attr, stroke "blue", fill "transparent" ] []
+        polyline [ class "charty-series-line", points attr, stroke color, fill "transparent" ] []
 
 
-drawPoints : Config msg -> Transform -> Series -> Svg msg
-drawPoints cfg transform series =
+drawPoints : Config msg -> Transform -> Color -> Series -> Svg msg
+drawPoints cfg transform color series =
     g [] <|
         if cfg.drawPoints then
-            List.map (drawPoint cfg transform) series
+            List.map (drawPoint cfg transform color) series
         else
             []
 
 
-drawPoint : Config msg -> Transform -> DataPoint -> Svg msg
-drawPoint cfg transform point =
+drawPoint : Config msg -> Transform -> Color -> DataPoint -> Svg msg
+drawPoint cfg transform color point =
     let
         ( x, y ) =
             transform point
@@ -157,7 +193,7 @@ drawPoint cfg transform point =
                 [ include <| cx (toString x)
                 , include <| cy (toString y)
                 , include <| r "10"
-                , include <| fill "blue"
+                , include <| fill color
                 , include <| class "charty-series-point"
                 , maybe <| handle Events.onMouseOver cfg.onMouseOver
                 , maybe <| handle Events.onMouseOut cfg.onMouseOut

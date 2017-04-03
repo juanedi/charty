@@ -60,6 +60,5 @@ view model =
             [ Html.div
                 [ Html.Attributes.style [ ( "height", "70vh" ), ( "margin", "0 auto" ) ] ]
                 [ Charty.LineChart.draw chartConfig data
-                , Html.div [] [ Html.text (Maybe.withDefault "Boo!" model) ]
                 ]
             ]
