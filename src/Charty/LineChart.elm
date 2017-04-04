@@ -6,6 +6,8 @@ module Charty.LineChart
         )
 
 import Charty.SelectList as SL exposing (include, maybe)
+import Regex
+import Round
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 import Svg.Events as Events
@@ -44,6 +46,37 @@ type alias Config msg =
     }
 
 
+type alias DatasetStats =
+    { bounds : Maybe DatasetBounds
+    , padding : Padding
+    , transform : Transform
+    , yLabelConfig : LabelConfig
+    }
+
+
+type alias Padding =
+    { top : Float
+    , right : Float
+    , bottom : Float
+    , left : Float
+    }
+
+
+type alias DatasetBounds =
+    { xMin : Float
+    , xMax : Float
+    , yMin : Float
+    , yMax : Float
+    }
+
+
+type alias LabelConfig =
+    { step : Float
+    , lowerBound : Float
+    , upperBound : Float
+    }
+
+
 defaults : Config msg
 defaults =
     { drawPoints = True
@@ -67,20 +100,26 @@ defaults =
 draw : Config msg -> Dataset -> Svg msg
 draw cfg dataset =
     let
-        transform =
-            calculateTransform dataset
+        highlight =
+            ( 100002, 3 )
+
+        stats =
+            initStats dataset
 
         seriesWithColors =
             withColors cfg.colorPalette dataset
 
         lines =
-            List.map (uncurry <| drawLine transform) seriesWithColors
+            List.map (uncurry <| drawLine stats.transform) seriesWithColors
 
         points =
-            List.map (uncurry <| drawPoints cfg transform) seriesWithColors
+            if cfg.drawPoints then
+                List.map (uncurry <| drawPoints cfg stats.transform) seriesWithColors
+            else
+                []
     in
         svgCanvas cfg.background
-            [ axis transform
+            [ axis stats
             , g [] lines
             , g [] points
             ]
@@ -112,8 +151,8 @@ svgCanvas backgroundColor content =
             (background :: content)
 
 
-calculateTransform : Dataset -> Transform
-calculateTransform dataset =
+initStats : Dataset -> DatasetStats
+initStats dataset =
     let
         points =
             List.concat dataset
@@ -123,12 +162,84 @@ calculateTransform dataset =
 
         ys =
             List.map (\( x, y ) -> y) points
+    in
+        case ( List.minimum xs, List.maximum xs, List.minimum ys, List.maximum ys ) of
+            ( Just xMin, Just xMax, Just yMin, Just yMax ) ->
+                let
+                    yLabelConfig =
+                        initYLabelConfig yMin yMax
 
-        ( mXm, mXM ) =
-            ( List.minimum xs, List.maximum xs )
+                    bounds =
+                        { xMin = xMin
+                        , xMax = xMax
+                        , yMin = yLabelConfig.lowerBound
+                        , yMax = yLabelConfig.upperBound
+                        }
 
-        ( mYm, mYM ) =
-            ( List.minimum ys, List.maximum ys )
+                    padding =
+                        initPadding bounds
+                in
+                    { bounds = Just bounds
+                    , padding = padding
+                    , transform = initTransform bounds padding
+                    , yLabelConfig = yLabelConfig
+                    }
+
+            _ ->
+                { bounds = Nothing
+                , padding = { top = 50, right = 50, bottom = 50, left = 50 }
+                , transform = identity
+                , yLabelConfig = { step = 1, lowerBound = 0, upperBound = 0 }
+                }
+
+
+initYLabelConfig : Float -> Float -> LabelConfig
+initYLabelConfig yMin yMax =
+    let
+        step =
+            (yMax - yMin) / 6
+
+        lowerBound =
+            step * (toFloat <| floor (yMin / step))
+
+        upperBound =
+            step * (toFloat <| ceiling (yMax / step))
+    in
+        { step = step, lowerBound = lowerBound, upperBound = upperBound }
+
+
+initPadding : DatasetBounds -> Padding
+initPadding { xMin, xMax, yMin, yMax } =
+    let
+        labelOffset n =
+            -- TODO: find a proper way to decide the svg offset for a given string
+            label n
+                |> String.length
+                |> (\n -> (toFloat n * 8 * 1000) / 320)
+
+        leftOffset =
+            Basics.max (labelOffset yMin) (labelOffset yMax)
+    in
+        { top = 50
+        , right = 50
+        , bottom = 50
+        , left = leftOffset
+        }
+
+
+label : Float -> String
+label =
+    Round.ceiling 2 >> Regex.replace Regex.All (Regex.regex "\\.0+$") (always "")
+
+
+initTransform : DatasetBounds -> Padding -> Transform
+initTransform { xMin, xMax, yMin, yMax } { top, right, bottom, left } =
+    let
+        drawingWidth =
+            1000 - right - left
+
+        drawingHeight =
+            1000 - top - bottom
 
         scaleFactor vm vM v =
             if vm == vM then
@@ -136,33 +247,77 @@ calculateTransform dataset =
             else
                 (v - vm) / (vM - vm)
     in
-        case ( mXm, mXM, mYm, mYM ) of
-            ( Just xm, Just xM, Just ym, Just yM ) ->
-                \( x, y ) ->
-                    ( 50 + 900 * (scaleFactor xm xM x)
-                    , 950 - 900 * (scaleFactor (Basics.min 0 ym) (Basics.max 0 yM) y)
-                    )
-
-            _ ->
-                identity
+        \( x, y ) ->
+            ( left + drawingWidth * (scaleFactor xMin xMax x)
+            , (1000 - top) - drawingHeight * (scaleFactor (Basics.min 0 yMin) (Basics.max 0 yMax) y)
+            )
 
 
-axis : Transform -> Svg msg
-axis transform =
+axis : DatasetStats -> Svg msg
+axis stats =
     let
-        ( _, zY ) =
-            transform ( 0, 0 )
+        { top, right, bottom, left } =
+            stats.padding
+
+        ( _, y0 ) =
+            stats.transform ( 0, 0 )
 
         axisLine ( vx1, vy1 ) ( vx2, vy2 ) =
-            line [ x1 (toString vx1), y1 (toString vy1), x2 (toString vx2), y2 (toString vy2), stroke "#CACACA", strokeDasharray "5 5" ] []
+            line
+                [ x1 <| toString vx1
+                , y1 <| toString vy1
+                , x2 <| toString vx2
+                , y2 <| toString vy2
+                , stroke "#CFCFCF"
+                , strokeDasharray "5 5"
+                ]
+                []
+
+        referenceLine yVal ySvg =
+            g []
+                [ axisLine ( left, ySvg ) ( 1000 - right, ySvg )
+                , text_
+                    [ x "20"
+                    , y <| toString (ySvg + 8)
+                    , fontFamily "Oxygen,Helvetica,Arial,sans-serif"
+                    , fontSize "24px"
+                    , fill "#CFCFCF"
+                    ]
+                    [ text (label yVal) ]
+                ]
 
         xAxis =
-            axisLine ( 50, zY ) ( 950, zY )
+            referenceLine 0 y0
+
+        drawLabel val =
+            let
+                ( _, yT ) =
+                    stats.transform ( 0, val )
+            in
+                referenceLine val yT
+
+        yLabels =
+            List.map drawLabel (range stats.yLabelConfig)
 
         yAxis =
-            axisLine ( 50, 50 ) ( 50, 950 )
+            axisLine ( left, bottom ) ( left, 1000 - top )
     in
-        g [] [ xAxis, yAxis ]
+        g [] (yAxis :: yLabels)
+
+
+range : LabelConfig -> List Float
+range { step, lowerBound, upperBound } =
+    let
+        rangeRec start end step result =
+            if start <= end then
+                rangeRec (start + step) end step (start :: result)
+            else
+                result
+
+        range start end step =
+            List.reverse <| rangeRec start end step []
+    in
+        range lowerBound upperBound step
 
 
 drawLine : Transform -> Color -> Series -> Svg msg
@@ -182,10 +337,7 @@ drawLine transform color series =
 drawPoints : Config msg -> Transform -> Color -> Series -> Svg msg
 drawPoints cfg transform color series =
     g [] <|
-        if cfg.drawPoints then
-            List.map (drawPoint cfg transform color) series
-        else
-            []
+        List.map (drawPoint cfg transform color) series
 
 
 drawPoint : Config msg -> Transform -> Color -> DataPoint -> Svg msg
