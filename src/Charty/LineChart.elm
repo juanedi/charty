@@ -70,14 +70,19 @@ draw cfg dataset =
         transform =
             calculateTransform dataset
 
+        seriesWithColors =
+            withColors cfg.colorPalette dataset
+
         lines =
-            dataset
-                |> withColors cfg.colorPalette
-                |> List.map (uncurry <| drawSeries cfg transform)
+            List.map (uncurry <| drawLine transform) seriesWithColors
+
+        points =
+            List.map (uncurry <| drawPoints cfg transform) seriesWithColors
     in
         svgCanvas cfg.background
             [ axis transform
             , g [] lines
+            , g [] points
             ]
 
 
@@ -160,14 +165,6 @@ axis transform =
         g [] [ xAxis, yAxis ]
 
 
-drawSeries : Config msg -> Transform -> Color -> Series -> Svg msg
-drawSeries cfg transform color series =
-    g [ class "charty-series" ]
-        [ drawLine transform color series
-        , drawPoints cfg transform color series
-        ]
-
-
 drawLine : Transform -> Color -> Series -> Svg msg
 drawLine transform color series =
     let
@@ -179,7 +176,7 @@ drawLine transform color series =
                 |> List.map (transform >> pointString)
                 |> String.join ", "
     in
-        polyline [ class "charty-series-line", points attr, stroke color, fill "transparent" ] []
+        polyline [ points attr, stroke color, fill "transparent" ] []
 
 
 drawPoints : Config msg -> Transform -> Color -> Series -> Svg msg
@@ -206,7 +203,6 @@ drawPoint cfg transform color point =
                 , include <| cy (toString y)
                 , include <| r "10"
                 , include <| fill color
-                , include <| class "charty-series-point"
                 , maybe <| handle Events.onMouseOver cfg.onMouseOver
                 , maybe <| handle Events.onMouseOut cfg.onMouseOut
                 ]
