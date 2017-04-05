@@ -5,6 +5,8 @@ module Charty.LineChart
         , defaults
         )
 
+import Array exposing (Array)
+import Charty.ArrayUtil as ArrayUtil
 import Charty.SelectList as SL exposing (include, maybe)
 import Regex
 import Round
@@ -50,7 +52,7 @@ type alias DatasetStats =
     { bounds : Maybe DatasetBounds
     , padding : Padding
     , transform : Transform
-    , yLabelConfig : LabelConfig
+    , yLabels : Array Float
     }
 
 
@@ -67,13 +69,6 @@ type alias DatasetBounds =
     , xMax : Float
     , yMin : Float
     , yMax : Float
-    }
-
-
-type alias LabelConfig =
-    { step : Float
-    , lowerBound : Float
-    , upperBound : Float
     }
 
 
@@ -166,35 +161,35 @@ initStats dataset =
         case ( List.minimum xs, List.maximum xs, List.minimum ys, List.maximum ys ) of
             ( Just xMin, Just xMax, Just yMin, Just yMax ) ->
                 let
-                    yLabelConfig =
-                        initYLabelConfig yMin yMax
+                    yLabels =
+                        initYLabels yMin yMax
 
                     bounds =
                         { xMin = xMin
                         , xMax = xMax
-                        , yMin = yLabelConfig.lowerBound
-                        , yMax = yLabelConfig.upperBound
+                        , yMin = ArrayUtil.unsafeFirst yLabels
+                        , yMax = ArrayUtil.unsafeLast yLabels
                         }
 
                     padding =
-                        initPadding bounds
+                        initPadding yLabels
                 in
                     { bounds = Just bounds
                     , padding = padding
                     , transform = initTransform bounds padding
-                    , yLabelConfig = yLabelConfig
+                    , yLabels = yLabels
                     }
 
             _ ->
                 { bounds = Nothing
                 , padding = { top = 50, right = 50, bottom = 50, left = 50 }
                 , transform = identity
-                , yLabelConfig = { step = 1, lowerBound = 0, upperBound = 0 }
+                , yLabels = Array.fromList [ 0 ]
                 }
 
 
-initYLabelConfig : Float -> Float -> LabelConfig
-initYLabelConfig yMin yMax =
+initYLabels : Float -> Float -> Array Float
+initYLabels yMin yMax =
     let
         step =
             (yMax - yMin) / 6
@@ -205,20 +200,22 @@ initYLabelConfig yMin yMax =
         upperBound =
             step * (toFloat <| ceiling (yMax / step))
     in
-        { step = step, lowerBound = lowerBound, upperBound = upperBound }
+        range step lowerBound upperBound
 
 
-initPadding : DatasetBounds -> Padding
-initPadding { xMin, xMax, yMin, yMax } =
+initPadding : Array Float -> Padding
+initPadding yLabels =
     let
         labelOffset n =
             -- TODO: find a proper way to decide the svg offset for a given string
             label n
                 |> String.length
-                |> (\n -> (toFloat n * 8 * 1000) / 320)
+                |> \n -> (toFloat n * 8 * 1000) / 320
 
         leftOffset =
-            Basics.max (labelOffset yMin) (labelOffset yMax)
+            yLabels
+                |> Array.map labelOffset
+                |> ArrayUtil.unsafeMaximum
     in
         { top = 50
         , right = 50
@@ -297,7 +294,7 @@ axis stats =
                 referenceLine val yT
 
         yLabels =
-            List.map drawLabel (range stats.yLabelConfig)
+            Array.foldr (\l r -> (drawLabel l) :: r) [] stats.yLabels
 
         yAxis =
             axisLine ( left, bottom ) ( left, 1000 - top )
@@ -305,8 +302,8 @@ axis stats =
         g [] (yAxis :: yLabels)
 
 
-range : LabelConfig -> List Float
-range { step, lowerBound, upperBound } =
+range : Float -> Float -> Float -> Array Float
+range step lowerBound upperBound =
     let
         rangeRec start end step result =
             if start <= end then
@@ -317,7 +314,7 @@ range { step, lowerBound, upperBound } =
         range start end step =
             List.reverse <| rangeRec start end step []
     in
-        range lowerBound upperBound step
+        Array.fromList <| range lowerBound upperBound step
 
 
 drawLine : Transform -> Color -> Series -> Svg msg
