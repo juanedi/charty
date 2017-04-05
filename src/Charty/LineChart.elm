@@ -190,17 +190,22 @@ initStats dataset =
 
 initYLabels : Float -> Float -> Array Float
 initYLabels yMin yMax =
-    let
-        step =
-            (yMax - yMin) / 6
+    if yMin == yMax then
+        [ 0, yMin, 2 * yMin ]
+            |> List.sort
+            |> Array.fromList
+    else
+        let
+            step =
+                (yMax - yMin) / 6
 
-        lowerBound =
-            step * (toFloat <| floor (yMin / step))
+            lowerBound =
+                step * (toFloat <| floor (yMin / step))
 
-        upperBound =
-            step * (toFloat <| ceiling (yMax / step))
-    in
-        range step lowerBound upperBound
+            upperBound =
+                step * (toFloat <| ceiling (yMax / step))
+        in
+            range step lowerBound upperBound
 
 
 initPadding : Array Float -> Padding
@@ -246,7 +251,7 @@ initTransform { xMin, xMax, yMin, yMax } { top, right, bottom, left } =
     in
         \( x, y ) ->
             ( left + drawingWidth * (scaleFactor xMin xMax x)
-            , (1000 - top) - drawingHeight * (scaleFactor (Basics.min 0 yMin) (Basics.max 0 yMax) y)
+            , (1000 - top) - drawingHeight * (scaleFactor yMin yMax y)
             )
 
 
@@ -255,9 +260,6 @@ axis stats =
     let
         { top, right, bottom, left } =
             stats.padding
-
-        ( _, y0 ) =
-            stats.transform ( 0, 0 )
 
         axisLine ( vx1, vy1 ) ( vx2, vy2 ) =
             line
@@ -270,31 +272,25 @@ axis stats =
                 ]
                 []
 
-        referenceLine yVal ySvg =
-            g []
-                [ axisLine ( left, ySvg ) ( 1000 - right, ySvg )
-                , text_
-                    [ x "20"
-                    , y <| toString (ySvg + 8)
-                    , fontFamily "Oxygen,Helvetica,Arial,sans-serif"
-                    , fontSize "24px"
-                    , fill "#CFCFCF"
-                    ]
-                    [ text (label yVal) ]
-                ]
-
-        xAxis =
-            referenceLine 0 y0
-
-        drawLabel val =
+        referenceLine yVal =
             let
-                ( _, yT ) =
-                    stats.transform ( 0, val )
+                yT =
+                    stats.transform ( 0, yVal ) |> Tuple.second
             in
-                referenceLine val yT
+                g []
+                    [ axisLine ( left, yT ) ( 1000 - right, yT )
+                    , text_
+                        [ x "20"
+                        , y <| toString (yT + 8)
+                        , fontFamily "Oxygen,Helvetica,Arial,sans-serif"
+                        , fontSize "24px"
+                        , fill "#CFCFCF"
+                        ]
+                        [ text (label yVal) ]
+                    ]
 
         yLabels =
-            Array.foldr (\l r -> (drawLabel l) :: r) [] stats.yLabels
+            Array.foldr (\l r -> (referenceLine l) :: r) [] stats.yLabels
 
         yAxis =
             axisLine ( left, bottom ) ( left, 1000 - top )
