@@ -13,7 +13,6 @@ import Regex
 import Round
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-import Svg.Events as Events
 
 
 type alias DataPoint =
@@ -47,7 +46,8 @@ type alias Config =
     }
 
 
-type alias DatasetStats =
+type alias DrawingSettings =
+    -- These are settings for how to draw the data that are inferred from the actual dataset
     { padding : Padding
     , transform : Transform
     , yLabels : Array Float
@@ -106,44 +106,35 @@ defaultColorAssignment dataset =
 draw : Config -> Dataset -> Svg msg
 draw cfg dataset =
     let
-        highlight =
-            ( 100002, 3 )
+        background =
+            Svg.rect [ width "1000", height "1000", fill cfg.background ] []
 
-        stats =
-            initStats dataset
+        drawingSettings =
+            initDrawingSettings dataset
 
         seriesWithColors =
             cfg.colorAssignment dataset
 
         lines =
-            List.map (uncurry <| drawLine stats.transform) seriesWithColors
+            List.map (drawLine drawingSettings.transform) seriesWithColors
 
         points =
             if cfg.drawPoints then
-                List.map (uncurry <| drawPoints stats.transform) seriesWithColors
+                List.map (drawPoints drawingSettings.transform) seriesWithColors
             else
                 []
     in
-        svgCanvas cfg.background
-            [ axis stats
+        Svg.svg
+            [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
+            [ background
+            , axis drawingSettings
             , g [] lines
             , g [] points
             ]
 
 
-svgCanvas : Color -> List (Svg msg) -> Svg msg
-svgCanvas backgroundColor content =
-    let
-        background =
-            Svg.rect [ width "1000", height "1000", fill backgroundColor ] []
-    in
-        Svg.svg
-            [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
-            (background :: content)
-
-
-initStats : Dataset -> DatasetStats
-initStats dataset =
+initDrawingSettings : Dataset -> DrawingSettings
+initDrawingSettings dataset =
     let
         points =
             List.concat dataset
@@ -253,11 +244,11 @@ initTransform { xMin, xMax, yMin, yMax } { top, right, bottom, left } =
             )
 
 
-axis : DatasetStats -> Svg msg
-axis stats =
+axis : DrawingSettings -> Svg msg
+axis drawingSettings =
     let
         { top, right, bottom, left } =
-            stats.padding
+            drawingSettings.padding
 
         axisLine ( vx1, vy1 ) ( vx2, vy2 ) =
             line
@@ -273,7 +264,7 @@ axis stats =
         referenceLine yVal =
             let
                 yT =
-                    stats.transform ( 0, yVal ) |> Tuple.second
+                    drawingSettings.transform ( 0, yVal ) |> Tuple.second
             in
                 g []
                     [ axisLine ( left, yT ) ( 1000 - right, yT )
@@ -288,7 +279,7 @@ axis stats =
                     ]
 
         yLabels =
-            Array.foldr (\l r -> (referenceLine l) :: r) [] stats.yLabels
+            Array.foldr (\l r -> (referenceLine l) :: r) [] drawingSettings.yLabels
 
         yAxis =
             axisLine ( left, bottom ) ( left, 1000 - top )
@@ -299,20 +290,19 @@ axis stats =
 range : Float -> Float -> Float -> Array Float
 range step lowerBound upperBound =
     let
-        rangeRec start end step result =
+        rec start end step result =
             if start <= end then
-                rangeRec (start + step) end step (start :: result)
+                rec (start + step) end step (start :: result)
             else
                 result
-
-        range start end step =
-            List.reverse <| rangeRec start end step []
     in
-        Array.fromList <| range lowerBound upperBound step
+        rec lowerBound upperBound step []
+            |> List.reverse
+            |> Array.fromList
 
 
-drawLine : Transform -> Color -> Series -> Svg msg
-drawLine transform color series =
+drawLine : Transform -> ( Color, Series ) -> Svg msg
+drawLine transform ( color, series ) =
     let
         pointString ( x, y ) =
             toString x ++ " " ++ toString y
@@ -325,8 +315,8 @@ drawLine transform color series =
         polyline [ points attr, stroke color, fill "transparent" ] []
 
 
-drawPoints : Transform -> Color -> Series -> Svg msg
-drawPoints transform color series =
+drawPoints : Transform -> ( Color, Series ) -> Svg msg
+drawPoints transform ( color, series ) =
     g [] <|
         List.map (drawPoint transform color) series
 

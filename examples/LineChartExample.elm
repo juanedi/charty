@@ -41,12 +41,12 @@ update msg model =
 view : Model -> Html Msg
 view model =
     H.div
-        [ HA.style [ ( "display", "flex" ) ] ]
+        [ HA.style [ ( "display", "flex" ), ( "height", "100vh" ) ] ]
         [ H.div
             [ HA.style [ ( "padding", "30px" ) ] ]
             [ datasetSelector model ]
         , H.div
-            [ HA.style [ ( "flex-grow", "1" ), ( "max-height", "700px" ) ] ]
+            [ HA.style [ ( "flex-grow", "1" ) ] ]
             [ LC.draw LC.defaults (dataset model) ]
         ]
 
