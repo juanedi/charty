@@ -43,7 +43,7 @@ type alias Color =
 type alias Config =
     { drawPoints : Bool
     , background : Color
-    , colorPalette : List Color
+    , colorAssignment : Dataset -> List ( Color, Series )
     }
 
 
@@ -74,18 +74,33 @@ defaults : Config
 defaults =
     { drawPoints = True
     , background = "#FAFAFA"
-    , colorPalette =
-        [ "#4D4D4D" -- gray
-        , "#5DA5DA" -- blue
-        , "#FAA43A" -- orange
-        , "#60BD68" -- green
-        , "#F17CB0" -- pink
-        , "#B2912F" -- brown
-        , "#B276B2" -- purple
-        , "#DECF3F" -- yellow
-        , "#F15854" -- red
-        ]
+    , colorAssignment = defaultColorAssignment
     }
+
+
+defaultColorAssignment : Dataset -> List ( Color, Series )
+defaultColorAssignment dataset =
+    let
+        defaultColorPalette =
+            Array.fromList
+                [ "#4D4D4D" -- gray
+                , "#5DA5DA" -- blue
+                , "#FAA43A" -- orange
+                , "#60BD68" -- green
+                , "#F17CB0" -- pink
+                , "#B2912F" -- brown
+                , "#B276B2" -- purple
+                , "#DECF3F" -- yellow
+                , "#F15854" -- red
+                ]
+
+        colorCount =
+            Array.length defaultColorPalette
+
+        color index =
+            ArrayUtil.unsafeGet (index % colorCount) defaultColorPalette
+    in
+        List.indexedMap (\i series -> ( color i, series )) dataset
 
 
 draw : Config -> Dataset -> Svg msg
@@ -98,7 +113,7 @@ draw cfg dataset =
             initStats dataset
 
         seriesWithColors =
-            withColors cfg.colorPalette dataset
+            cfg.colorAssignment dataset
 
         lines =
             List.map (uncurry <| drawLine stats.transform) seriesWithColors
@@ -114,21 +129,6 @@ draw cfg dataset =
             , g [] lines
             , g [] points
             ]
-
-
-withColors : List Color -> Dataset -> List ( Color, Series )
-withColors palette dataset =
-    let
-        requiredColors =
-            List.length dataset
-
-        rec colorList =
-            if (List.length colorList < requiredColors) then
-                rec (colorList ++ palette)
-            else
-                List.map2 (,) colorList dataset
-    in
-        rec palette
 
 
 svgCanvas : Color -> List (Svg msg) -> Svg msg
