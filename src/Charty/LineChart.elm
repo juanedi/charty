@@ -39,10 +39,8 @@ type alias Color =
     String
 
 
-type alias Config msg =
+type alias Config =
     { drawPoints : Bool
-    , onMouseOver : Maybe (DataPoint -> msg)
-    , onMouseOut : Maybe (DataPoint -> msg)
     , background : Color
     , colorPalette : List Color
     }
@@ -71,11 +69,9 @@ type alias DatasetBounds =
     }
 
 
-defaults : Config msg
+defaults : Config
 defaults =
     { drawPoints = True
-    , onMouseOver = Nothing
-    , onMouseOut = Nothing
     , background = "#FAFAFA"
     , colorPalette =
         [ "#4D4D4D" -- gray
@@ -91,7 +87,7 @@ defaults =
     }
 
 
-draw : Config msg -> Dataset -> Svg msg
+draw : Config -> Dataset -> Svg msg
 draw cfg dataset =
     let
         highlight =
@@ -108,7 +104,7 @@ draw cfg dataset =
 
         points =
             if cfg.drawPoints then
-                List.map (uncurry <| drawPoints cfg stats.transform) seriesWithColors
+                List.map (uncurry <| drawPoints stats.transform) seriesWithColors
             else
                 []
     in
@@ -328,14 +324,14 @@ drawLine transform color series =
         polyline [ points attr, stroke color, fill "transparent" ] []
 
 
-drawPoints : Config msg -> Transform -> Color -> Series -> Svg msg
-drawPoints cfg transform color series =
+drawPoints : Transform -> Color -> Series -> Svg msg
+drawPoints transform color series =
     g [] <|
-        List.map (drawPoint cfg transform color) series
+        List.map (drawPoint transform color) series
 
 
-drawPoint : Config msg -> Transform -> Color -> DataPoint -> Svg msg
-drawPoint cfg transform color point =
+drawPoint : Transform -> Color -> DataPoint -> Svg msg
+drawPoint transform color point =
     let
         ( x, y ) =
             transform point
@@ -349,8 +345,6 @@ drawPoint cfg transform color point =
                 , include <| cy (toString y)
                 , include <| r "10"
                 , include <| fill color
-                , maybe <| handle Events.onMouseOver cfg.onMouseOver
-                , maybe <| handle Events.onMouseOut cfg.onMouseOut
                 ]
             )
             []
