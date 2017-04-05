@@ -49,8 +49,7 @@ type alias Config msg =
 
 
 type alias DatasetStats =
-    { bounds : Maybe DatasetBounds
-    , padding : Padding
+    { padding : Padding
     , transform : Transform
     , yLabels : Array Float
     }
@@ -174,18 +173,20 @@ initStats dataset =
                     padding =
                         initPadding yLabels
                 in
-                    { bounds = Just bounds
-                    , padding = padding
+                    { padding = padding
                     , transform = initTransform bounds padding
                     , yLabels = yLabels
                     }
 
             _ ->
-                { bounds = Nothing
-                , padding = { top = 50, right = 50, bottom = 50, left = 50 }
-                , transform = identity
-                , yLabels = Array.fromList [ 0 ]
-                }
+                let
+                    padding =
+                        { top = 50, right = 50, bottom = 50, left = 50 }
+                in
+                    { padding = padding
+                    , transform = initTransform { xMin = 0, xMax = 0, yMin = 0, yMax = 0 } padding
+                    , yLabels = Array.fromList [ 0 ]
+                    }
 
 
 initYLabels : Float -> Float -> Array Float
