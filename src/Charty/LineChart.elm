@@ -2,6 +2,7 @@ module Charty.LineChart
     exposing
         ( draw
         , Config
+        , Dataset
         , defaults
         )
 
