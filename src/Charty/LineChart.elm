@@ -200,11 +200,11 @@ initYLabels yMin yMax =
 initPadding : Array Float -> Padding
 initPadding yLabels =
     let
-        labelOffset n =
-            -- TODO: find a proper way to decide the svg offset for a given string
-            label n
-                |> String.length
-                |> \n -> (toFloat n * 8 * 1000) / 320
+        labelOffset =
+            label
+                >> gsub "\\." ""
+                >> String.length
+                >> \n -> toFloat n * 25
 
         leftOffset =
             yLabels
@@ -218,9 +218,14 @@ initPadding yLabels =
         }
 
 
+gsub : String -> String -> String -> String
+gsub regex replacement =
+    Regex.replace Regex.All (Regex.regex regex) (always replacement)
+
+
 label : Float -> String
 label =
-    Round.ceiling 2 >> Regex.replace Regex.All (Regex.regex "\\.0+$") (always "")
+    Round.ceiling 2 >> gsub "\\.0+$" ""
 
 
 initTransform : DatasetBounds -> Padding -> Transform

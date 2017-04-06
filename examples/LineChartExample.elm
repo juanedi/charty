@@ -52,7 +52,12 @@ view model =
             ]
         ]
         [ H.div
-            [ HA.style [ ( "padding", "10px" ), ( "display", "flex" ), ( "flex-direction", "column" ) ] ]
+            [ HA.style
+                [ ( "padding", "10px" )
+                , ( "display", "flex" )
+                , ( "flex-direction", "column" )
+                ]
+            ]
             [ H.textarea
                 [ HA.style [ ( "flex-grow", "1" ), ( "min-width", "500px" ), ( "font-size", "15px" ) ]
                 , HE.onInput DatasetChange
