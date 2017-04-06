@@ -1,19 +1,20 @@
 module LineChartExample exposing (..)
 
+import Array
 import Charty.LineChart as LC
 import Html as H exposing (Html, div, text)
 import Html.Attributes as HA
 import Html.Events as HE
+import Json.Decode as JD
+import Json.Encode as JE
 
 
 type Msg
-    = ChangeData Model
+    = DatasetChange String
 
 
-type Model
-    = Empty
-    | Singleton
-    | Nice
+type alias Model =
+    LC.Dataset
 
 
 main : Program Never Model Msg
@@ -28,81 +29,74 @@ main =
 
 init : ( Model, Cmd Msg )
 init =
-    ( Nice, Cmd.none )
+    ( sampleDataset, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        ChangeData dataset ->
+update (DatasetChange text) model =
+    case JD.decodeString datasetDecoder text of
+        Result.Ok dataset ->
             ( dataset, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 view : Model -> Html Msg
 view model =
     H.div
-        [ HA.style [ ( "display", "flex" ), ( "height", "100vh" ) ] ]
+        [ HA.style
+            [ ( "display", "flex" )
+            , ( "height", "100vh" )
+            , ( "background-color", "#FAFAFA" )
+            ]
+        ]
         [ H.div
-            [ HA.style [ ( "padding", "30px" ) ] ]
-            [ datasetSelector model ]
+            [ HA.style [ ( "padding", "10px" ), ( "display", "flex" ), ( "flex-direction", "column" ) ] ]
+            [ H.textarea
+                [ HA.style [ ( "flex-grow", "1" ), ( "min-width", "500px" ), ( "font-size", "15px" ) ]
+                , HE.onInput DatasetChange
+                ]
+                [ H.text (JE.encode 4 (datasetEncoder model)) ]
+            ]
         , H.div
             [ HA.style [ ( "flex-grow", "1" ) ] ]
-            [ LC.draw LC.defaults (dataset model) ]
+            [ LC.draw LC.defaults model ]
         ]
 
 
-datasetSelector : Model -> Html Msg
-datasetSelector model =
+sampleDataset : LC.Dataset
+sampleDataset =
+    [ [ ( 100000, 3 ), ( 100001, 4 ), ( 100002, 3 ), ( 100003, 2 ), ( 100004, 1 ), ( 100005, 1 ), ( 100006, -1 ) ]
+    , [ ( 100000, 1 ), ( 100001, 2.5 ), ( 100002, 3 ), ( 100003, 3.5 ), ( 100004, 3 ), ( 100005, 2 ), ( 100006, 0 ) ]
+    , [ ( 100000, 2 ), ( 100001, 1.5 ), ( 100002, 0 ), ( 100003, 3 ), ( 100004, -0.5 ), ( 100005, -1.5 ), ( 100006, -2 ) ]
+    ]
+
+
+datasetEncoder : LC.Dataset -> JE.Value
+datasetEncoder =
     let
-        isCurrent o =
-            case ( o, model ) of
-                ( Empty, Empty ) ->
-                    True
+        entryEncoder =
+            \( x, y ) -> JE.array (Array.fromList [ JE.float x, JE.float y ])
 
-                ( Singleton, Singleton ) ->
-                    True
+        seriesEncoder =
+            List.map entryEncoder >> JE.list
+    in
+        List.map seriesEncoder >> JE.list
 
-                ( Nice, Nice ) ->
-                    True
+
+datasetDecoder : JD.Decoder LC.Dataset
+datasetDecoder =
+    let
+        arrayToTuple a =
+            case Array.toList a of
+                x :: y :: [] ->
+                    JD.succeed ( x, y )
 
                 _ ->
-                    False
+                    JD.fail "Failed to decode point"
 
-        opt o =
-            H.div
-                [ HA.style [ ( "margin-bottom", "10px" ) ] ]
-                [ H.input
-                    [ HA.id (toString o)
-                    , HA.type_ "radio"
-                    , HA.checked (isCurrent o)
-                    , HA.style [ ( "margin-right", "10px" ) ]
-                    , HE.onCheck <| always (ChangeData o)
-                    ]
-                    []
-                , H.label [ HA.for (toString o) ] [ H.text (toString o) ]
-                ]
+        entryDecoder =
+            JD.array JD.float |> JD.andThen arrayToTuple
     in
-        H.div
-            []
-            [ H.div [] [ H.text "Dataset:" ]
-            , H.br [] []
-            , opt Empty
-            , opt Singleton
-            , opt Nice
-            ]
-
-
-dataset : Model -> LC.Dataset
-dataset model =
-    case model of
-        Empty ->
-            []
-
-        Singleton ->
-            [ [ ( 1, 3 ) ] ]
-
-        Nice ->
-            [ [ ( 100000, 3 ), ( 100001, 4 ), ( 100002, 3 ), ( 100003, 2 ), ( 100004, 1 ), ( 100005, 1 ), ( 100006, -1 ) ]
-            , [ ( 100000, 1 ), ( 100001, 2.5 ), ( 100002, 3 ), ( 100003, 3.5 ), ( 100004, 3 ), ( 100005, 2 ), ( 100006, 0 ) ]
-            , [ ( 100000, 2 ), ( 100001, 1.5 ), ( 100002, 0 ), ( 100003, 3 ), ( 100004, -0.5 ), ( 100005, -1.5 ), ( 100006, -2 ) ]
-            ]
+        JD.list <| JD.list entryDecoder
