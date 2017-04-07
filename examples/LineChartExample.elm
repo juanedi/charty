@@ -66,7 +66,7 @@ view model =
             ]
         , H.div
             [ HA.style [ ( "flex-grow", "1" ) ] ]
-            [ LC.draw LC.defaults model ]
+            [ LC.view LC.defaults model ]
         ]
 
 

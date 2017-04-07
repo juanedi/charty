@@ -1,6 +1,6 @@
 module Charty.LineChart
     exposing
-        ( draw
+        ( view
         , Config
         , Dataset
         , defaults
@@ -103,8 +103,8 @@ defaultColorAssignment dataset =
         List.indexedMap (\i series -> ( color i, series )) dataset
 
 
-draw : Config -> Dataset -> Svg msg
-draw cfg dataset =
+view : Config -> Dataset -> Svg msg
+view cfg dataset =
     let
         background =
             Svg.rect [ width "1000", height "1000", fill cfg.background ] []
