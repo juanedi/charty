@@ -185,16 +185,22 @@ initYLabels yMin yMax =
             |> Array.fromList
     else
         let
-            step =
-                (yMax - yMin) / 6
-
-            lowerBound =
-                step * (toFloat <| floor (yMin / step))
-
-            upperBound =
-                step * (toFloat <| ceiling (yMax / step))
+            splitRange min max pieces =
+                if pieces == 0 then
+                    [ min ]
+                else
+                    let
+                        -- note that it's better to recalculate the step
+                        -- every time to make up for rounding errors.
+                        -- this way we make sure that ranges are more evenly
+                        -- distributed and -more important- that the last
+                        -- element is precisely the upperbound we wanted
+                        step =
+                            (max - min) / toFloat pieces
+                    in
+                        min :: (splitRange (min + step) max (pieces - 1))
         in
-            range step lowerBound upperBound
+            Array.fromList (splitRange yMin yMax 6)
 
 
 initPadding : Array Float -> Padding
@@ -290,20 +296,6 @@ axis drawingSettings =
             axisLine ( left, bottom ) ( left, 1000 - top )
     in
         g [] (yAxis :: yLabels)
-
-
-range : Float -> Float -> Float -> Array Float
-range step lowerBound upperBound =
-    let
-        rec start end step result =
-            if start <= end then
-                rec (start + step) end step (start :: result)
-            else
-                result
-    in
-        rec lowerBound upperBound step []
-            |> List.reverse
-            |> Array.fromList
 
 
 drawLine : Transform -> ( Color, Series ) -> Svg msg
