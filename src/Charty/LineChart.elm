@@ -43,6 +43,7 @@ type alias Config =
     { drawPoints : Bool
     , background : Color
     , colorAssignment : Dataset -> List ( Color, Series )
+    , labelPrecision : Int
     }
 
 
@@ -75,6 +76,7 @@ defaults =
     { drawPoints = True
     , background = "#FAFAFA"
     , colorAssignment = defaultColorAssignment
+    , labelPrecision = 2
     }
 
 
@@ -110,7 +112,7 @@ view cfg dataset =
             Svg.rect [ width "1000", height "1000", fill cfg.background ] []
 
         drawingSettings =
-            initDrawingSettings dataset
+            initDrawingSettings cfg dataset
 
         seriesWithColors =
             cfg.colorAssignment dataset
@@ -127,14 +129,14 @@ view cfg dataset =
         Svg.svg
             [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
             [ background
-            , axis drawingSettings
+            , axis cfg drawingSettings
             , g [] lines
             , g [] points
             ]
 
 
-initDrawingSettings : Dataset -> DrawingSettings
-initDrawingSettings dataset =
+initDrawingSettings : Config -> Dataset -> DrawingSettings
+initDrawingSettings cfg dataset =
     let
         points =
             List.concat dataset
@@ -159,7 +161,7 @@ initDrawingSettings dataset =
                         }
 
                     padding =
-                        initPadding yLabels
+                        initPadding cfg yLabels
                 in
                     { padding = padding
                     , transform = initTransform bounds padding
@@ -203,11 +205,11 @@ initYLabels yMin yMax =
             Array.fromList (splitRange yMin yMax 6)
 
 
-initPadding : Array Float -> Padding
-initPadding yLabels =
+initPadding : Config -> Array Float -> Padding
+initPadding cfg yLabels =
     let
         labelOffset =
-            label
+            label cfg.labelPrecision
                 >> gsub "\\." ""
                 >> String.length
                 >> \n -> toFloat n * 25
@@ -229,9 +231,9 @@ gsub regex replacement =
     Regex.replace Regex.All (Regex.regex regex) (always replacement)
 
 
-label : Float -> String
-label =
-    Round.ceiling 2 >> gsub "\\.0+$" ""
+label : Int -> Float -> String
+label precision =
+    Round.ceiling precision >> gsub "\\.0+$" ""
 
 
 initTransform : DatasetBounds -> Padding -> Transform
@@ -255,8 +257,8 @@ initTransform { xMin, xMax, yMin, yMax } { top, right, bottom, left } =
             )
 
 
-axis : DrawingSettings -> Svg msg
-axis drawingSettings =
+axis : Config -> DrawingSettings -> Svg msg
+axis cfg drawingSettings =
     let
         { top, right, bottom, left } =
             drawingSettings.padding
@@ -286,7 +288,7 @@ axis drawingSettings =
                         , fontSize "24px"
                         , fill "#CFCFCF"
                         ]
-                        [ text (label yVal) ]
+                        [ text (label cfg.labelPrecision yVal) ]
                     ]
 
         yLabels =
