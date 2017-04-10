@@ -14,7 +14,10 @@ type Msg
 
 
 type alias Model =
-    LineChart.Dataset
+    { input : String
+    , inputOk : Bool
+    , dataset : LineChart.Dataset
+    }
 
 
 main : Program Never Model Msg
@@ -29,17 +32,21 @@ main =
 
 init : ( Model, Cmd Msg )
 init =
-    ( sampleDataset, Cmd.none )
+    let
+        dataset =
+            sampleDataset
+    in
+        ( { input = encodeDataset dataset, inputOk = True, dataset = sampleDataset }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update (DatasetChange text) model =
     case Decode.decodeString datasetDecoder text of
         Result.Ok dataset ->
-            ( dataset, Cmd.none )
+            ( { input = text, inputOk = True, dataset = dataset }, Cmd.none )
 
         _ ->
-            ( model, Cmd.none )
+            ( { input = text, inputOk = False, dataset = model.dataset }, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -56,17 +63,32 @@ view model =
                 [ ( "padding", "10px" )
                 , ( "display", "flex" )
                 , ( "flex-direction", "column" )
+                , ( "width", "370px" )
+                , ( "font-family", "sans-serif" )
                 ]
             ]
-            [ Html.textarea
-                [ Attributes.style [ ( "flex-grow", "1" ), ( "min-width", "500px" ), ( "font-size", "15px" ) ]
+            [ Html.p [] [ Html.text "The dataset below will be displayed on the right upon validation." ]
+            , Html.textarea
+                [ Attributes.style
+                    [ ( "flex-grow", "1" )
+                    , ( "font-size", "15px" )
+                    ]
                 , Events.onInput DatasetChange
                 ]
-                [ Html.text (Encode.encode 4 (datasetEncoder model)) ]
+                [ Html.text model.input ]
             ]
         , Html.div
-            [ Attributes.style [ ( "flex-grow", "1" ) ] ]
-            [ LineChart.view LineChart.defaults model ]
+            [ Attributes.style
+                [ ( "flex-grow", "1" )
+                , ( "opacity"
+                  , if model.inputOk then
+                        "1"
+                    else
+                        "0.3"
+                  )
+                ]
+            ]
+            [ LineChart.view LineChart.defaults model.dataset ]
         ]
 
 
@@ -78,16 +100,19 @@ sampleDataset =
     ]
 
 
-datasetEncoder : LineChart.Dataset -> Encode.Value
-datasetEncoder =
+encodeDataset : LineChart.Dataset -> String
+encodeDataset dataset =
     let
         entryEncoder =
             \( x, y ) -> Encode.array (Array.fromList [ Encode.float x, Encode.float y ])
 
         seriesEncoder =
             List.map entryEncoder >> Encode.list
+
+        datasetEncoder =
+            List.map seriesEncoder >> Encode.list
     in
-        List.map seriesEncoder >> Encode.list
+        Encode.encode 4 (datasetEncoder dataset)
 
 
 datasetDecoder : Decode.Decoder LineChart.Dataset
