@@ -212,7 +212,7 @@ initPadding cfg yLabels =
             label cfg.labelPrecision
                 >> gsub "\\." ""
                 >> String.length
-                >> \n -> toFloat n * 25
+                >> \n -> toFloat n * 20
 
         leftOffset =
             yLabels
@@ -277,13 +277,14 @@ axis cfg drawingSettings =
         referenceLine yVal =
             let
                 yT =
-                    drawingSettings.transform ( 0, yVal ) |> Tuple.second
+                    Tuple.second <| drawingSettings.transform ( 0, yVal )
             in
                 g []
                     [ axisLine ( left, yT ) ( 1000 - right, yT )
                     , text_
-                        [ x "20"
+                        [ x <| toString (left - 15)
                         , y <| toString (yT + 8)
+                        , textAnchor "end"
                         , fontFamily "Oxygen,Helvetica,Arial,sans-serif"
                         , fontSize "24px"
                         , fill "#CFCFCF"
