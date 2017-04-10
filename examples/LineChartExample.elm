@@ -1,12 +1,12 @@
 module LineChartExample exposing (..)
 
 import Array
-import Charty.LineChart as LC
-import Html as H exposing (Html, div, text)
-import Html.Attributes as HA
-import Html.Events as HE
-import Json.Decode as JD
-import Json.Encode as JE
+import Charty.LineChart as LineChart
+import Html exposing (Html, div, text)
+import Html.Attributes as Attributes
+import Html.Events as Events
+import Json.Decode as Decode
+import Json.Encode as Encode
 
 
 type Msg
@@ -14,12 +14,12 @@ type Msg
 
 
 type alias Model =
-    LC.Dataset
+    LineChart.Dataset
 
 
 main : Program Never Model Msg
 main =
-    H.program
+    Html.program
         { init = init
         , view = view
         , update = update
@@ -34,7 +34,7 @@ init =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update (DatasetChange text) model =
-    case JD.decodeString datasetDecoder text of
+    case Decode.decodeString datasetDecoder text of
         Result.Ok dataset ->
             ( dataset, Cmd.none )
 
@@ -44,33 +44,33 @@ update (DatasetChange text) model =
 
 view : Model -> Html Msg
 view model =
-    H.div
-        [ HA.style
+    Html.div
+        [ Attributes.style
             [ ( "display", "flex" )
             , ( "height", "100vh" )
             , ( "background-color", "#FAFAFA" )
             ]
         ]
-        [ H.div
-            [ HA.style
+        [ Html.div
+            [ Attributes.style
                 [ ( "padding", "10px" )
                 , ( "display", "flex" )
                 , ( "flex-direction", "column" )
                 ]
             ]
-            [ H.textarea
-                [ HA.style [ ( "flex-grow", "1" ), ( "min-width", "500px" ), ( "font-size", "15px" ) ]
-                , HE.onInput DatasetChange
+            [ Html.textarea
+                [ Attributes.style [ ( "flex-grow", "1" ), ( "min-width", "500px" ), ( "font-size", "15px" ) ]
+                , Events.onInput DatasetChange
                 ]
-                [ H.text (JE.encode 4 (datasetEncoder model)) ]
+                [ Html.text (Encode.encode 4 (datasetEncoder model)) ]
             ]
-        , H.div
-            [ HA.style [ ( "flex-grow", "1" ) ] ]
-            [ LC.view LC.defaults model ]
+        , Html.div
+            [ Attributes.style [ ( "flex-grow", "1" ) ] ]
+            [ LineChart.view LineChart.defaults model ]
         ]
 
 
-sampleDataset : LC.Dataset
+sampleDataset : LineChart.Dataset
 sampleDataset =
     [ [ ( 100000, 3 ), ( 100001, 4 ), ( 100002, 3 ), ( 100003, 2 ), ( 100004, 1 ), ( 100005, 1 ), ( 100006, -1 ) ]
     , [ ( 100000, 1 ), ( 100001, 2.5 ), ( 100002, 3 ), ( 100003, 3.5 ), ( 100004, 3 ), ( 100005, 2 ), ( 100006, 0 ) ]
@@ -78,30 +78,30 @@ sampleDataset =
     ]
 
 
-datasetEncoder : LC.Dataset -> JE.Value
+datasetEncoder : LineChart.Dataset -> Encode.Value
 datasetEncoder =
     let
         entryEncoder =
-            \( x, y ) -> JE.array (Array.fromList [ JE.float x, JE.float y ])
+            \( x, y ) -> Encode.array (Array.fromList [ Encode.float x, Encode.float y ])
 
         seriesEncoder =
-            List.map entryEncoder >> JE.list
+            List.map entryEncoder >> Encode.list
     in
-        List.map seriesEncoder >> JE.list
+        List.map seriesEncoder >> Encode.list
 
 
-datasetDecoder : JD.Decoder LC.Dataset
+datasetDecoder : Decode.Decoder LineChart.Dataset
 datasetDecoder =
     let
         arrayToTuple a =
             case Array.toList a of
                 x :: y :: [] ->
-                    JD.succeed ( x, y )
+                    Decode.succeed ( x, y )
 
                 _ ->
-                    JD.fail "Failed to decode point"
+                    Decode.fail "Failed to decode point"
 
         entryDecoder =
-            JD.array JD.float |> JD.andThen arrayToTuple
+            Decode.array Decode.float |> Decode.andThen arrayToTuple
     in
-        JD.list <| JD.list entryDecoder
+        Decode.list <| Decode.list entryDecoder
