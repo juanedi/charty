@@ -1,10 +1,29 @@
 module Charty.LineChart
     exposing
-        ( view
+        ( Dataset
+        , Series
+        , DataPoint
+        , Color
         , Config
-        , Dataset
         , defaults
+        , view
         )
+
+{-| This module is in charge of drawing line charts.
+
+# Data representation
+@docs Dataset
+@docs Series
+@docs DataPoint
+
+# Settings
+@docs Color
+@docs Config
+@docs defaults
+
+# Drawing
+@docs view
+-}
 
 import Array exposing (Array)
 import Charty.ArrayUtil as ArrayUtil
@@ -15,6 +34,20 @@ import Svg exposing (..)
 import Svg.Attributes exposing (..)
 
 
+{-| A dataset is just a list of series.
+-}
+type alias Dataset =
+    List Series
+
+
+{-| A series of points that will be draw as a separate line
+-}
+type alias Series =
+    List DataPoint
+
+
+{-| An (x,y) pair that will be drawn in the line chart
+-}
 type alias DataPoint =
     ( Float, Float )
 
@@ -27,18 +60,17 @@ type alias Transform =
     DataPoint -> SvgPoint
 
 
-type alias Series =
-    List DataPoint
-
-
-type alias Dataset =
-    List Series
-
-
+{-| The color used to draw a line. For the moment, any string used to specify
+SVG colors is valid, so things such as "red" and "#FF0000" should work.
+-}
 type alias Color =
     String
 
 
+{-| Configuration for how the chart will be drawn. Note that
+[`LineChart.defaults`](Charty.LineChart#defaults) can be used as a base
+configuration.
+-}
 type alias Config =
     { drawPoints : Bool
     , background : Color
@@ -71,6 +103,9 @@ type alias DatasetBounds =
     }
 
 
+{-| Default configuration. Labels have at most two decimal places and a default
+color palette is used.
+-}
 defaults : Config
 defaults =
     { drawPoints = True
@@ -105,6 +140,23 @@ defaultColorAssignment dataset =
         List.indexedMap (\i series -> ( color i, series )) dataset
 
 
+{-| This function generates svg markup for the chart, provided a the necessary
+configuration and dataset. Example usage:
+
+    sampleDataset : LineChart.Dataset
+    sampleDataset =
+        [ [ ( 100000, 3 ), ( 100001, 4 ) ]
+        , [ ( 100000, 1 ), ( 100001, 2.5 ) ]
+        ]
+
+    view : Model -> Html Msg
+    view model =
+        Html.div
+          []
+          [ Html.p [] [ Html.text "Wow!" ]
+          , LineChart.view LineChart.defaults dataset
+          ]
+-}
 view : Config -> Dataset -> Svg msg
 view cfg dataset =
     let
