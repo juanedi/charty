@@ -27,6 +27,7 @@ module Charty.LineChart
 
 import Array exposing (Array)
 import Charty.ArrayUtil as ArrayUtil
+import Charty.Common as Common
 import Charty.SelectList as SL exposing (include, maybe)
 import Regex
 import Round
@@ -118,24 +119,11 @@ defaults =
 defaultColorAssignment : Dataset -> List ( Color, Series )
 defaultColorAssignment dataset =
     let
-        defaultColorPalette =
-            Array.fromList
-                [ "#4D4D4D" -- gray
-                , "#5DA5DA" -- blue
-                , "#FAA43A" -- orange
-                , "#60BD68" -- green
-                , "#F17CB0" -- pink
-                , "#B2912F" -- brown
-                , "#B276B2" -- purple
-                , "#DECF3F" -- yellow
-                , "#F15854" -- red
-                ]
-
         colorCount =
-            Array.length defaultColorPalette
+            Array.length Common.defaultColorPalette
 
         color index =
-            ArrayUtil.unsafeGet (index % colorCount) defaultColorPalette
+            ArrayUtil.unsafeGet (index % colorCount) Common.defaultColorPalette
     in
         List.indexedMap (\i series -> ( color i, series )) dataset
 
