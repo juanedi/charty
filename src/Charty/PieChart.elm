@@ -1,6 +1,7 @@
 module Charty.PieChart
     exposing
         ( Dataset
+        , defaults
         , view
         )
 
@@ -24,6 +25,19 @@ type alias Slice =
 
 type alias Dataset =
     List ( String, Float )
+
+
+type alias Config =
+    { background : Color
+    , labelsColor : Color
+    }
+
+
+defaults : Config
+defaults =
+    { background = "#FAFAFA"
+    , labelsColor = "#000000"
+    }
 
 
 normalize : Dataset -> Dataset
@@ -63,8 +77,8 @@ accumulateStart start slices =
             ( start, s ) :: (accumulateStart (start + s.percentage) ss)
 
 
-drawSlice : Float -> Slice -> Svg msg
-drawSlice start slice =
+drawSlice : Config -> Float -> Slice -> Svg msg
+drawSlice config start slice =
     let
         ( x1, y1 ) =
             circumferencePoint start
@@ -117,19 +131,19 @@ circumferencePoint percentage =
         ( 500 * (1 + sin ang), 500 * (1 - cos ang) )
 
 
-view : Dataset -> Svg msg
-view dataset =
+view : Config -> Dataset -> Svg msg
+view config dataset =
     let
         background =
-            Svg.rect [ width "1450", height "1000", fill "#FAFAFA" ] []
+            Svg.rect [ width "1450", height "1000", fill config.background ] []
     in
         Svg.svg
             [ viewBox "0 0 1450 1000" ]
-            [ background, slices dataset, labels dataset ]
+            [ background, slices config dataset, labels config dataset ]
 
 
-labels : Dataset -> Svg msg
-labels dataset =
+labels : Config -> Dataset -> Svg msg
+labels config dataset =
     let
         slices =
             dataset
@@ -137,14 +151,14 @@ labels dataset =
                 |> assignColors
 
         labels slices =
-            List.indexedMap labelRow slices
+            List.indexedMap (labelRow config) slices
     in
         Svg.g [] <|
             labels slices
 
 
-labelRow : Int -> Slice -> Svg msg
-labelRow index slice =
+labelRow : Config -> Int -> Slice -> Svg msg
+labelRow config index slice =
     let
         xBase =
             1000 + 50
@@ -174,6 +188,7 @@ labelRow index slice =
             , text_
                 [ x <| toString (xBase + colorDimensions + 20)
                 , y <| toString paddingTop
+                , fill config.labelsColor
                 , fontFamily "sans-serif"
                 , fontSize "25px"
                 , alignmentBaseline "middle"
@@ -182,12 +197,12 @@ labelRow index slice =
             ]
 
 
-slices : Dataset -> Svg msg
-slices dataset =
+slices : Config -> Dataset -> Svg msg
+slices config dataset =
     dataset
         |> normalize
         |> List.sortBy (\( _, value ) -> value)
         |> assignColors
         |> accumulateStart 0
-        |> List.map (uncurry drawSlice)
+        |> List.map (uncurry (drawSlice config))
         |> Svg.svg [ viewBox "0 0 1000 1000", width "1000" ]

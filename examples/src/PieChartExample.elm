@@ -74,7 +74,7 @@ view model =
         , groupSlider model C
         , groupSlider model D
         ]
-        (PieChart.view (buildDataset model))
+        (PieChart.view PieChart.defaults (buildDataset model))
 
 
 groupSlider : Model -> Group -> Html Msg
