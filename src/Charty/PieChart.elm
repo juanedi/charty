@@ -28,6 +28,7 @@ type alias Dataset =
 type alias Config =
     { background : Color
     , labelsColor : Color
+    , maxGroupCount : Maybe Int
     }
 
 
@@ -35,15 +36,16 @@ defaults : Config
 defaults =
     { background = "#FAFAFA"
     , labelsColor = "#000000"
+    , maxGroupCount = Just 8
     }
 
 
-preprocess : Dataset -> List Slice
-preprocess dataset =
+preprocess : Config -> Dataset -> List Slice
+preprocess config dataset =
     dataset
         |> normalize
         |> List.sortBy (\( _, value ) -> -value)
-        |> truncate
+        |> truncate config.maxGroupCount
         |> Common.withDefaultColors
             (\color ( label, percentage ) -> { color = color, label = label, percentage = percentage })
 
@@ -67,18 +69,23 @@ normalize dataset =
         List.map (\( label, value ) -> ( label, 100 * value / sum )) dataset
 
 
-truncate : Dataset -> Dataset
-truncate dataset =
-    case List.drop 7 dataset of
-        [] ->
+truncate : Maybe Int -> Dataset -> Dataset
+truncate maxGroupCount dataset =
+    case maxGroupCount of
+        Nothing ->
             dataset
 
-        _ :: [] ->
-            dataset
+        Just n ->
+            case List.drop (n - 1) dataset of
+                [] ->
+                    dataset
 
-        rest ->
-            (List.take 7 dataset)
-                ++ [ ( "Other", sumValues rest ) ]
+                _ :: [] ->
+                    dataset
+
+                rest ->
+                    (List.take (n - 1) dataset)
+                        ++ [ ( "Other", sumValues rest ) ]
 
 
 accumulateStart : Float -> List Slice -> List ( Float, Slice )
@@ -152,7 +159,7 @@ view config dataset =
             Svg.rect [ width "1450", height "1000", fill config.background ] []
 
         slices =
-            preprocess dataset
+            preprocess config dataset
     in
         Svg.svg
             [ viewBox "0 0 1450 1000" ]
