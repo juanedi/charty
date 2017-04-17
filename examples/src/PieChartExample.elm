@@ -41,8 +41,8 @@ init : ( Model, Cmd Msg )
 init =
     let
         sampleDataset =
-            { groupA = 25
-            , groupB = 45
+            { groupA = 30
+            , groupB = 40
             , groupC = 10
             , groupD = 20
             }
@@ -68,13 +68,24 @@ update msg model =
 
 view : Model -> Html Msg
 view model =
-    Layout.twoColumns
-        [ groupSlider model A
-        , groupSlider model B
-        , groupSlider model C
-        , groupSlider model D
-        ]
-        (PieChart.view PieChart.defaults (buildDataset model))
+    let
+        defaults =
+            PieChart.defaults
+
+        colorAssignment =
+            -- Keep color assignment consistent with respect to group names
+            List.sortBy (\( label, _ ) -> label) >> defaults.colorAssignment
+
+        chartConfig =
+            { defaults | colorAssignment = colorAssignment }
+    in
+        Layout.twoColumns
+            [ groupSlider model A
+            , groupSlider model B
+            , groupSlider model C
+            , groupSlider model D
+            ]
+            (PieChart.view chartConfig (buildDataset model))
 
 
 groupSlider : Model -> Group -> Html Msg
