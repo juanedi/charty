@@ -121,10 +121,10 @@ view : Dataset -> Svg msg
 view dataset =
     let
         background =
-            Svg.rect [ width "1500", height "1000", fill "#FAFAFA" ] []
+            Svg.rect [ width "1450", height "1000", fill "#FAFAFA" ] []
     in
         Svg.svg
-            [ viewBox "0 0 1500 1000" ]
+            [ viewBox "0 0 1450 1000" ]
             [ background, slices dataset, labels dataset ]
 
 
@@ -147,13 +147,19 @@ labelRow : Int -> Slice -> Svg msg
 labelRow index slice =
     let
         xBase =
-            1000 + 100
+            1000 + 50
 
         paddingTop =
             100 + (index * 70)
 
         colorDimensions =
             30
+
+        displayText =
+            if String.length slice.label > 30 then
+                (String.left 27 slice.label) ++ "..."
+            else
+                slice.label
     in
         Svg.g
             []
@@ -172,7 +178,7 @@ labelRow index slice =
                 , fontSize "25px"
                 , alignmentBaseline "middle"
                 ]
-                [ text slice.label ]
+                [ text displayText ]
             ]
 
 
