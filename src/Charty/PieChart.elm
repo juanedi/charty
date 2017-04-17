@@ -121,16 +121,67 @@ view : Dataset -> Svg msg
 view dataset =
     let
         background =
-            Svg.rect [ width "1000", height "1000", fill "#FAFAFA" ] []
-
-        slices =
-            dataset
-                |> normalize
-                |> List.sortBy (\( _, value ) -> value)
-                |> assignColors
-                |> accumulateStart 0
-                |> List.map (uncurry drawSlice)
+            Svg.rect [ width "1500", height "1000", fill "#FAFAFA" ] []
     in
         Svg.svg
-            [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
-            (background :: slices)
+            [ viewBox "0 0 1500 1000" ]
+            [ background, slices dataset, labels dataset ]
+
+
+labels : Dataset -> Svg msg
+labels dataset =
+    let
+        slices =
+            dataset
+                |> List.sortBy (\( label, _ ) -> label)
+                |> assignColors
+
+        labels slices =
+            List.indexedMap labelRow slices
+    in
+        Svg.g [] <|
+            labels slices
+
+
+labelRow : Int -> Slice -> Svg msg
+labelRow index slice =
+    let
+        xBase =
+            1000 + 100
+
+        paddingTop =
+            100 + (index * 70)
+
+        colorDimensions =
+            30
+    in
+        Svg.g
+            []
+            [ Svg.rect
+                [ x <| toString xBase
+                , y <| toString (paddingTop - (floor <| colorDimensions / 2))
+                , width <| toString colorDimensions
+                , height <| toString colorDimensions
+                , fill slice.color
+                ]
+                []
+            , text_
+                [ x <| toString (xBase + colorDimensions + 20)
+                , y <| toString paddingTop
+                , fontFamily "sans-serif"
+                , fontSize "25px"
+                , alignmentBaseline "middle"
+                ]
+                [ text slice.label ]
+            ]
+
+
+slices : Dataset -> Svg msg
+slices dataset =
+    dataset
+        |> normalize
+        |> List.sortBy (\( _, value ) -> value)
+        |> assignColors
+        |> accumulateStart 0
+        |> List.map (uncurry drawSlice)
+        |> Svg.svg [ viewBox "0 0 1000 1000", width "1000" ]
