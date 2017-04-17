@@ -5,8 +5,6 @@ module Charty.PieChart
         , view
         )
 
-import Array
-import Charty.ArrayUtil as ArrayUtil
 import Charty.Common as Common
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
@@ -40,6 +38,31 @@ defaults =
     }
 
 
+{-| Normalizes dataset groups and assigns them colors
+-}
+preprocess : Dataset -> List Slice
+preprocess dataset =
+    let
+        sum =
+            dataset
+                |> List.map (\( label, value ) -> value)
+                |> List.sum
+
+        normalizedDataset =
+            List.map (\( label, value ) -> ( label, 100 * value / sum )) dataset
+
+        withColors =
+            Common.withDefaultColors normalizedDataset
+                (\color ( label, percentage ) ->
+                    { color = color
+                    , label = label
+                    , percentage = percentage
+                    }
+                )
+    in
+        withColors
+
+
 normalize : Dataset -> Dataset
 normalize dataset =
     let
@@ -49,22 +72,6 @@ normalize dataset =
                 |> List.sum
     in
         List.map (\( label, value ) -> ( label, 100 * value / valueSum )) dataset
-
-
-assignColors : Dataset -> List Slice
-assignColors dataset =
-    let
-        colorCount =
-            Array.length Common.defaultColorPalette
-
-        assignColor i ( label, value ) =
-            { label = label
-            , color = ArrayUtil.unsafeGet (i % colorCount) Common.defaultColorPalette
-            , percentage = value
-            }
-    in
-        dataset
-            |> List.indexedMap assignColor
 
 
 accumulateStart : Float -> List Slice -> List ( Float, Slice )
@@ -136,25 +143,22 @@ view config dataset =
     let
         background =
             Svg.rect [ width "1450", height "1000", fill config.background ] []
+
+        slices =
+            preprocess dataset
     in
         Svg.svg
             [ viewBox "0 0 1450 1000" ]
-            [ background, slices config dataset, labels config dataset ]
+            [ background, drawSlices config slices, drawLabels config slices ]
 
 
-labels : Config -> Dataset -> Svg msg
-labels config dataset =
+drawLabels : Config -> List Slice -> Svg msg
+drawLabels config slices =
     let
-        slices =
-            dataset
-                |> List.sortBy (\( label, _ ) -> label)
-                |> assignColors
-
         labels slices =
             List.indexedMap (labelRow config) slices
     in
-        Svg.g [] <|
-            labels slices
+        Svg.g [] (labels slices)
 
 
 labelRow : Config -> Int -> Slice -> Svg msg
@@ -197,12 +201,10 @@ labelRow config index slice =
             ]
 
 
-slices : Config -> Dataset -> Svg msg
-slices config dataset =
-    dataset
-        |> normalize
-        |> List.sortBy (\( _, value ) -> value)
-        |> assignColors
+drawSlices : Config -> List Slice -> Svg msg
+drawSlices config slices =
+    slices
+        |> List.sortBy .percentage
         |> accumulateStart 0
         |> List.map (uncurry (drawSlice config))
         |> Svg.svg [ viewBox "0 0 1000 1000", width "1000" ]

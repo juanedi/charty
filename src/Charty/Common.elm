@@ -1,6 +1,11 @@
-module Charty.Common exposing (defaultColorPalette)
+module Charty.Common exposing (withDefaultColors)
 
 import Array
+import Charty.ArrayUtil as ArrayUtil
+
+
+type alias Color =
+    String
 
 
 defaultColorPalette =
@@ -15,3 +20,15 @@ defaultColorPalette =
         , "#DECF3F" -- yellow
         , "#F15854" -- red
         ]
+
+
+withDefaultColors : List a -> (Color -> a -> b) -> List b
+withDefaultColors dataset f =
+    let
+        colorCount =
+            Array.length defaultColorPalette
+
+        color index =
+            ArrayUtil.unsafeGet (index % colorCount) defaultColorPalette
+    in
+        List.indexedMap (\i series -> f (color i) series) dataset

@@ -118,14 +118,7 @@ defaults =
 
 defaultColorAssignment : Dataset -> List ( Color, Series )
 defaultColorAssignment dataset =
-    let
-        colorCount =
-            Array.length Common.defaultColorPalette
-
-        color index =
-            ArrayUtil.unsafeGet (index % colorCount) Common.defaultColorPalette
-    in
-        List.indexedMap (\i series -> ( color i, series )) dataset
+    Common.withDefaultColors dataset (\color series -> ( color, series ))
 
 
 {-| This function generates svg markup for the chart, provided a the necessary
