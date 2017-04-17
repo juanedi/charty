@@ -120,7 +120,9 @@ drawSlice config start slice =
             circumferencePoint start
 
         ( x2, y2 ) =
-            circumferencePoint (start + slice.percentage)
+            -- self closing arcs (100%) are not drawn by the browser.
+            -- this is a hack, but seems to work visually and keeps drawing code consistent.
+            circumferencePoint (start + Basics.min 99.9999 slice.percentage)
 
         largeArc =
             if slice.percentage <= 50 then
@@ -140,9 +142,7 @@ drawSlice config start slice =
                 , [ "A 500 500 0", largeArc, "1" ]
 
                 -- arc to point 2.
-                -- self closing arcs (100%) are not drawn by the browser.
-                -- the (hacky) solution is to use floor to prevent the arc to close itself and rely on the stroke to hide the gap.
-                , [ x2 |> floor |> toString, y2 |> floor |> toString ]
+                , [ toString x2, toString y2 ]
 
                 -- return to center
                 , [ "Z" ]
@@ -150,7 +150,7 @@ drawSlice config start slice =
     in
         Svg.path
             [ d pathDefinition
-            , stroke slice.color
+            , stroke "transparent"
             , fill slice.color
             ]
             []
