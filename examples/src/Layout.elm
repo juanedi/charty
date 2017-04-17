@@ -2,10 +2,10 @@ module Layout exposing (twoColumns)
 
 import Html exposing (Html, div)
 import Html.Attributes as Attributes
-import Svg exposing (Svg)
+import VirtualDom exposing (Node)
 
 
-twoColumns : List (Html msg) -> Svg msg -> Html msg
+twoColumns : List (Html msg) -> Node msg -> Html msg
 twoColumns controls chart =
     Html.div
         [ Attributes.style

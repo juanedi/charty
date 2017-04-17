@@ -52,21 +52,34 @@ update (DatasetChange text) model =
 
 view : Model -> Html Msg
 view model =
-    Layout.twoColumns
-        [ Html.p
-            []
-            [ Html.text "The dataset below will be displayed on the right upon validation." ]
-        , Html.textarea
-            [ Attributes.style
-                [ ( "width", "100%" )
-                , ( "flex-grow", "1" )
-                , ( "font-size", "14px" )
+    let
+        chart =
+            LineChart.view LineChart.defaults model.dataset
+
+        opacity =
+            if model.inputOk then
+                1
+            else
+                0.3
+    in
+        Layout.twoColumns
+            [ Html.p
+                []
+                [ Html.text "The dataset below will be displayed on the right upon validation." ]
+            , Html.textarea
+                [ Attributes.style
+                    [ ( "width", "100%" )
+                    , ( "flex-grow", "1" )
+                    , ( "font-size", "14px" )
+                    ]
+                , Events.onInput DatasetChange
                 ]
-            , Events.onInput DatasetChange
+                [ Html.text model.input ]
             ]
-            [ Html.text model.input ]
-        ]
-        (LineChart.view LineChart.defaults model.dataset)
+            (Html.div
+                [ Attributes.style [ ( "opacity", toString opacity ) ] ]
+                [ chart ]
+            )
 
 
 sampleDataset : LineChart.Dataset
