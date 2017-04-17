@@ -111,14 +111,9 @@ defaults : Config
 defaults =
     { drawPoints = True
     , background = "#FAFAFA"
-    , colorAssignment = defaultColorAssignment
+    , colorAssignment = Common.withDefaultColors
     , labelPrecision = 2
     }
-
-
-defaultColorAssignment : Dataset -> List ( Color, Series )
-defaultColorAssignment dataset =
-    Common.withDefaultColors (\color series -> ( color, series )) dataset
 
 
 {-| This function generates svg markup for the chart, provided a the necessary

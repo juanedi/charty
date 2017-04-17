@@ -22,8 +22,8 @@ defaultColorPalette =
         ]
 
 
-withDefaultColors : (Color -> a -> b) -> List a -> List b
-withDefaultColors f dataset =
+withDefaultColors : List a -> List ( Color, a )
+withDefaultColors dataset =
     let
         colorCount =
             Array.length defaultColorPalette
@@ -31,4 +31,4 @@ withDefaultColors f dataset =
         color index =
             ArrayUtil.unsafeGet (index % colorCount) defaultColorPalette
     in
-        List.indexedMap (\i series -> f (color i) series) dataset
+        List.indexedMap (\i series -> ( (color i), series )) dataset

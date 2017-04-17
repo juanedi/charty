@@ -1,6 +1,9 @@
 module Charty.PieChart
     exposing
         ( Dataset
+        , Group
+        , Color
+        , Config
         , defaults
         , view
         )
@@ -22,13 +25,18 @@ type alias Slice =
 
 
 type alias Dataset =
-    List ( String, Float )
+    List Group
+
+
+type alias Group =
+    ( String, Float )
 
 
 type alias Config =
     { background : Color
     , labelsColor : Color
     , maxGroupCount : Maybe Int
+    , colorAssignment : Dataset -> List ( Color, Group )
     }
 
 
@@ -37,6 +45,7 @@ defaults =
     { background = "#FAFAFA"
     , labelsColor = "#000000"
     , maxGroupCount = Just 8
+    , colorAssignment = Common.withDefaultColors
     }
 
 
@@ -46,8 +55,14 @@ preprocess config dataset =
         |> normalize
         |> List.sortBy (\( _, value ) -> -value)
         |> truncate config.maxGroupCount
-        |> Common.withDefaultColors
-            (\color ( label, percentage ) -> { color = color, label = label, percentage = percentage })
+        |> config.colorAssignment
+        |> List.map
+            (\( color, ( label, percentage ) ) ->
+                { color = color
+                , label = label
+                , percentage = percentage
+                }
+            )
 
 
 sumValues : Dataset -> Float
