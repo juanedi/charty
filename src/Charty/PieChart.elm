@@ -80,16 +80,27 @@ drawSlice start slice =
 
         pathDefinition =
             (List.concat >> String.join " ")
-                [ [ "M 500 500" ] -- start at center
-                , [ "L ", toString x1, toString y1 ] -- straight line to point 1
-                , [ "A 500 500 0", largeArc, "1" ] -- arc definition
-                , [ toString x2, toString y2 ] -- arc to point 2
-                , [ "Z" ] -- return to center
+                [ -- start at center
+                  [ "M 500 500" ]
+
+                -- straight line to point 1
+                , [ "L ", toString x1, toString y1 ]
+
+                -- arc definition
+                , [ "A 500 500 0", largeArc, "1" ]
+
+                -- arc to point 2.
+                -- self closing arcs (100%) are not drawn by the browser.
+                -- the (hacky) solution is to use floor to prevent the arc to close itself and rely on the stroke to hide the gap.
+                , [ x2 |> floor |> toString, y2 |> floor |> toString ]
+
+                -- return to center
+                , [ "Z" ]
                 ]
     in
         Svg.path
             [ d pathDefinition
-            , stroke "transparent"
+            , stroke slice.color
             , fill slice.color
             ]
             []
