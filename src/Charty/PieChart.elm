@@ -9,11 +9,13 @@ module Charty.PieChart
         )
 
 import Charty.Common as Common
+import Charty.Labels as Labels exposing (LabelEntry)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 
 
 type alias Color =
+    -- TODO: use common definition
     String
 
 
@@ -170,64 +172,16 @@ circumferencePoint percentage =
 view : Config -> Dataset -> Svg msg
 view config dataset =
     let
-        background =
-            Svg.rect [ width "1450", height "1000", fill config.background ] []
-
         slices =
             preprocess config dataset
+
+        chart =
+            drawSlices config slices
+
+        labels =
+            List.map (\s -> ( s.color, s.label )) slices
     in
-        Svg.svg
-            [ viewBox "0 0 1450 1000" ]
-            [ background, drawSlices config slices, drawLabels config slices ]
-
-
-drawLabels : Config -> List Slice -> Svg msg
-drawLabels config slices =
-    let
-        labels slices =
-            List.indexedMap (labelRow config) slices
-    in
-        Svg.g [] (labels slices)
-
-
-labelRow : Config -> Int -> Slice -> Svg msg
-labelRow config index slice =
-    let
-        xBase =
-            1000 + 50
-
-        paddingTop =
-            100 + (index * 70)
-
-        colorDimensions =
-            30
-
-        displayText =
-            if String.length slice.label > 30 then
-                (String.left 27 slice.label) ++ "..."
-            else
-                slice.label
-    in
-        Svg.g
-            []
-            [ Svg.rect
-                [ x <| toString xBase
-                , y <| toString (paddingTop - (floor <| colorDimensions / 2))
-                , width <| toString colorDimensions
-                , height <| toString colorDimensions
-                , fill slice.color
-                ]
-                []
-            , text_
-                [ x <| toString (xBase + colorDimensions + 20)
-                , y <| toString paddingTop
-                , fill config.labelsColor
-                , fontFamily "sans-serif"
-                , fontSize "25px"
-                , alignmentBaseline "middle"
-                ]
-                [ text displayText ]
-            ]
+        Labels.withLabels { background = config.background, labelsColor = config.labelsColor } chart labels
 
 
 drawSlices : Config -> List Slice -> Svg msg

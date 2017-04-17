@@ -1,6 +1,6 @@
-module Charty.Common exposing (withDefaultColors)
+module Charty.Common exposing (withDefaultColors, Color)
 
-import Array
+import Array exposing (Array)
 import Charty.ArrayUtil as ArrayUtil
 
 
@@ -8,6 +8,7 @@ type alias Color =
     String
 
 
+defaultColorPalette : Array Color
 defaultColorPalette =
     Array.fromList
         [ "#4D4D4D" -- gray

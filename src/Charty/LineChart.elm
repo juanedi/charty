@@ -28,6 +28,7 @@ module Charty.LineChart
 import Array exposing (Array)
 import Charty.ArrayUtil as ArrayUtil
 import Charty.Common as Common
+import Charty.Labels as Labels
 import Charty.SelectList as SL exposing (include, maybe)
 import Regex
 import Round
@@ -44,7 +45,9 @@ type alias Dataset =
 {-| A series of points that will be draw as a separate line
 -}
 type alias Series =
-    List DataPoint
+    { label : String
+    , data : List DataPoint
+    }
 
 
 {-| An (x,y) pair that will be drawn in the line chart
@@ -77,6 +80,7 @@ type alias Config =
     , background : Color
     , colorAssignment : Dataset -> List ( Color, Series )
     , labelPrecision : Int
+    , drawLabels : Bool
     }
 
 
@@ -113,6 +117,7 @@ defaults =
     , background = "#FAFAFA"
     , colorAssignment = Common.withDefaultColors
     , labelPrecision = 2
+    , drawLabels = True
     }
 
 
@@ -153,21 +158,30 @@ view cfg dataset =
                 List.map (drawPoints drawingSettings.transform) seriesWithColors
             else
                 []
+
+        chart =
+            Svg.svg
+                [ width "1000", viewBox "0 0 1000 1000" ]
+                [ background
+                , axis cfg drawingSettings
+                , g [] lines
+                , g [] points
+                ]
+
+        labels =
+            List.map (\( color, series ) -> ( color, series.label )) seriesWithColors
     in
-        Svg.svg
-            [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
-            [ background
-            , axis cfg drawingSettings
-            , g [] lines
-            , g [] points
-            ]
+        if cfg.drawLabels then
+            Labels.withLabels { background = cfg.background, labelsColor = "#333333" } chart labels
+        else
+            chart
 
 
 initDrawingSettings : Config -> Dataset -> DrawingSettings
 initDrawingSettings cfg dataset =
     let
         points =
-            List.concat dataset
+            List.concatMap .data dataset
 
         xs =
             List.map (\( x, y ) -> x) points
@@ -336,7 +350,7 @@ drawLine transform ( color, series ) =
             toString x ++ " " ++ toString y
 
         attr =
-            series
+            series.data
                 |> List.map (transform >> pointString)
                 |> String.join ", "
     in
@@ -346,7 +360,7 @@ drawLine transform ( color, series ) =
 drawPoints : Transform -> ( Color, Series ) -> Svg msg
 drawPoints transform ( color, series ) =
     g [] <|
-        List.map (drawPoint transform color) series
+        List.map (drawPoint transform color) series.data
 
 
 drawPoint : Transform -> Color -> DataPoint -> Svg msg

@@ -46,7 +46,7 @@ update (DatasetChange text) model =
         Result.Ok dataset ->
             ( { input = text, inputOk = True, dataset = dataset }, Cmd.none )
 
-        _ ->
+        Result.Err _ ->
             ( { input = text, inputOk = False, dataset = model.dataset }, Cmd.none )
 
 
@@ -71,9 +71,9 @@ view model =
 
 sampleDataset : LineChart.Dataset
 sampleDataset =
-    [ [ ( 100000, 3 ), ( 100001, 4 ), ( 100002, 3 ), ( 100003, 2 ), ( 100004, 1 ), ( 100005, 1 ), ( 100006, -1 ) ]
-    , [ ( 100000, 1 ), ( 100001, 2.5 ), ( 100002, 3 ), ( 100003, 3.5 ), ( 100004, 3 ), ( 100005, 2 ), ( 100006, 0 ) ]
-    , [ ( 100000, 2 ), ( 100001, 1.5 ), ( 100002, 0 ), ( 100003, 3 ), ( 100004, -0.5 ), ( 100005, -1.5 ), ( 100006, -2 ) ]
+    [ { label = "Series 1", data = [ ( 100000, 3 ), ( 100001, 4 ), ( 100002, 3 ), ( 100003, 2 ), ( 100004, 1 ), ( 100005, 1 ), ( 100006, -1 ) ] }
+    , { label = "Series 2", data = [ ( 100000, 1 ), ( 100001, 2.5 ), ( 100002, 3 ), ( 100003, 3.5 ), ( 100004, 3 ), ( 100005, 2 ), ( 100006, 0 ) ] }
+    , { label = "Series 3", data = [ ( 100000, 2 ), ( 100001, 1.5 ), ( 100002, 0 ), ( 100003, 3 ), ( 100004, -0.5 ), ( 100005, -1.5 ), ( 100006, -2 ) ] }
     ]
 
 
@@ -83,8 +83,11 @@ encodeDataset dataset =
         entryEncoder =
             \( x, y ) -> Encode.array (Array.fromList [ Encode.float x, Encode.float y ])
 
-        seriesEncoder =
-            List.map entryEncoder >> Encode.list
+        seriesEncoder series =
+            Encode.object
+                [ ( "label", Encode.string series.label )
+                , ( "data", series.data |> List.map entryEncoder |> Encode.list )
+                ]
 
         datasetEncoder =
             List.map seriesEncoder >> Encode.list
@@ -105,5 +108,10 @@ datasetDecoder =
 
         entryDecoder =
             Decode.array Decode.float |> Decode.andThen arrayToTuple
+
+        seriesDecoder =
+            Decode.map2 (\label data -> { label = label, data = data })
+                (Decode.field "label" Decode.string)
+                (Decode.field "data" (Decode.list entryDecoder))
     in
-        Decode.list <| Decode.list entryDecoder
+        Decode.list <| seriesDecoder
