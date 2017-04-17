@@ -118,7 +118,7 @@ defaults =
 
 defaultColorAssignment : Dataset -> List ( Color, Series )
 defaultColorAssignment dataset =
-    Common.withDefaultColors dataset (\color series -> ( color, series ))
+    Common.withDefaultColors (\color series -> ( color, series )) dataset
 
 
 {-| This function generates svg markup for the chart, provided a the necessary

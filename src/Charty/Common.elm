@@ -22,8 +22,8 @@ defaultColorPalette =
         ]
 
 
-withDefaultColors : List a -> (Color -> a -> b) -> List b
-withDefaultColors dataset f =
+withDefaultColors : (Color -> a -> b) -> List a -> List b
+withDefaultColors f dataset =
     let
         colorCount =
             Array.length defaultColorPalette

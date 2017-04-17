@@ -38,40 +38,47 @@ defaults =
     }
 
 
-{-| Normalizes dataset groups and assigns them colors
--}
 preprocess : Dataset -> List Slice
 preprocess dataset =
-    let
-        sum =
-            dataset
-                |> List.map (\( label, value ) -> value)
-                |> List.sum
+    dataset
+        |> normalize
+        |> List.sortBy (\( _, value ) -> -value)
+        |> truncate
+        |> Common.withDefaultColors
+            (\color ( label, percentage ) -> { color = color, label = label, percentage = percentage })
 
-        normalizedDataset =
-            List.map (\( label, value ) -> ( label, 100 * value / sum )) dataset
 
-        withColors =
-            Common.withDefaultColors normalizedDataset
-                (\color ( label, percentage ) ->
-                    { color = color
-                    , label = label
-                    , percentage = percentage
-                    }
-                )
-    in
-        withColors
+sumValues : Dataset -> Float
+sumValues dataset =
+    case dataset of
+        [] ->
+            0
+
+        ( _, value ) :: rest ->
+            value + (sumValues rest)
 
 
 normalize : Dataset -> Dataset
 normalize dataset =
     let
-        valueSum =
-            dataset
-                |> List.map (\( label, value ) -> value)
-                |> List.sum
+        sum =
+            sumValues dataset
     in
-        List.map (\( label, value ) -> ( label, 100 * value / valueSum )) dataset
+        List.map (\( label, value ) -> ( label, 100 * value / sum )) dataset
+
+
+truncate : Dataset -> Dataset
+truncate dataset =
+    case List.drop 7 dataset of
+        [] ->
+            dataset
+
+        _ :: [] ->
+            dataset
+
+        rest ->
+            (List.take 7 dataset)
+                ++ [ ( "Other", sumValues rest ) ]
 
 
 accumulateStart : Float -> List Slice -> List ( Float, Slice )
@@ -204,7 +211,6 @@ labelRow config index slice =
 drawSlices : Config -> List Slice -> Svg msg
 drawSlices config slices =
     slices
-        |> List.sortBy .percentage
         |> accumulateStart 0
         |> List.map (uncurry (drawSlice config))
         |> Svg.svg [ viewBox "0 0 1000 1000", width "1000" ]
