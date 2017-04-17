@@ -43,7 +43,7 @@ type alias Config =
 defaults : Config
 defaults =
     { background = "#FAFAFA"
-    , labelsColor = "#000000"
+    , labelsColor = "#333333"
     , maxGroupCount = Just 8
     , colorAssignment = Common.withDefaultColors
     }
