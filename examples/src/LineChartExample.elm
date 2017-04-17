@@ -7,6 +7,7 @@ import Html.Attributes as Attributes
 import Html.Events as Events
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Layout
 
 
 type Msg
@@ -51,45 +52,21 @@ update (DatasetChange text) model =
 
 view : Model -> Html Msg
 view model =
-    Html.div
-        [ Attributes.style
-            [ ( "display", "flex" )
-            , ( "height", "100vh" )
-            , ( "background-color", "#FAFAFA" )
-            ]
-        ]
-        [ Html.div
+    Layout.twoColumns
+        [ Html.p
+            []
+            [ Html.text "The dataset below will be displayed on the right upon validation." ]
+        , Html.textarea
             [ Attributes.style
-                [ ( "padding", "10px" )
-                , ( "display", "flex" )
-                , ( "flex-direction", "column" )
-                , ( "width", "370px" )
-                , ( "font-family", "sans-serif" )
+                [ ( "width", "100%" )
+                , ( "flex-grow", "1" )
+                , ( "font-size", "14px" )
                 ]
+            , Events.onInput DatasetChange
             ]
-            [ Html.p [] [ Html.text "The dataset below will be displayed on the right upon validation." ]
-            , Html.textarea
-                [ Attributes.style
-                    [ ( "flex-grow", "1" )
-                    , ( "font-size", "15px" )
-                    ]
-                , Events.onInput DatasetChange
-                ]
-                [ Html.text model.input ]
-            ]
-        , Html.div
-            [ Attributes.style
-                [ ( "flex-grow", "1" )
-                , ( "opacity"
-                  , if model.inputOk then
-                        "1"
-                    else
-                        "0.3"
-                  )
-                ]
-            ]
-            [ LineChart.view LineChart.defaults model.dataset ]
+            [ Html.text model.input ]
         ]
+        (LineChart.view LineChart.defaults model.dataset)
 
 
 sampleDataset : LineChart.Dataset
