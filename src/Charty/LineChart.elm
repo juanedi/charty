@@ -3,7 +3,6 @@ module Charty.LineChart
         ( Dataset
         , Series
         , DataPoint
-        , Color
         , Config
         , defaults
         , view
@@ -17,7 +16,6 @@ module Charty.LineChart
 @docs DataPoint
 
 # Settings
-@docs Color
 @docs Config
 @docs defaults
 
@@ -27,6 +25,8 @@ module Charty.LineChart
 
 import Array exposing (Array)
 import Charty.ArrayUtil as ArrayUtil
+import Charty.Color as Color exposing (Color)
+import Charty.Labels as Labels
 import Charty.SelectList as SL exposing (include, maybe)
 import Regex
 import Round
@@ -43,7 +43,9 @@ type alias Dataset =
 {-| A series of points that will be draw as a separate line
 -}
 type alias Series =
-    List DataPoint
+    { label : String
+    , data : List DataPoint
+    }
 
 
 {-| An (x,y) pair that will be drawn in the line chart
@@ -60,13 +62,6 @@ type alias Transform =
     DataPoint -> SvgPoint
 
 
-{-| The color used to draw a line. For the moment, any string used to specify
-SVG colors is valid, so things such as "red" and "#FF0000" should work.
--}
-type alias Color =
-    String
-
-
 {-| Configuration for how the chart will be drawn. Note that
 [`LineChart.defaults`](Charty.LineChart#defaults) can be used as a base
 configuration.
@@ -76,6 +71,7 @@ type alias Config =
     , background : Color
     , colorAssignment : Dataset -> List ( Color, Series )
     , labelPrecision : Int
+    , drawLabels : Bool
     }
 
 
@@ -110,34 +106,10 @@ defaults : Config
 defaults =
     { drawPoints = True
     , background = "#FAFAFA"
-    , colorAssignment = defaultColorAssignment
+    , colorAssignment = Color.assignDefaults
     , labelPrecision = 2
+    , drawLabels = True
     }
-
-
-defaultColorAssignment : Dataset -> List ( Color, Series )
-defaultColorAssignment dataset =
-    let
-        defaultColorPalette =
-            Array.fromList
-                [ "#4D4D4D" -- gray
-                , "#5DA5DA" -- blue
-                , "#FAA43A" -- orange
-                , "#60BD68" -- green
-                , "#F17CB0" -- pink
-                , "#B2912F" -- brown
-                , "#B276B2" -- purple
-                , "#DECF3F" -- yellow
-                , "#F15854" -- red
-                ]
-
-        colorCount =
-            Array.length defaultColorPalette
-
-        color index =
-            ArrayUtil.unsafeGet (index % colorCount) defaultColorPalette
-    in
-        List.indexedMap (\i series -> ( color i, series )) dataset
 
 
 {-| This function generates svg markup for the chart, provided a the necessary
@@ -177,21 +149,37 @@ view cfg dataset =
                 List.map (drawPoints drawingSettings.transform) seriesWithColors
             else
                 []
+
+        chart =
+            Svg.svg
+                [ width "1000", viewBox "0 0 1000 1000" ]
+                [ background
+                , axis cfg drawingSettings
+                , g [] lines
+                , g [] points
+                ]
     in
-        Svg.svg
-            [ width "100%", height "100%", viewBox "0 0 1000 1000" ]
-            [ background
-            , axis cfg drawingSettings
-            , g [] lines
-            , g [] points
-            ]
+        if cfg.drawLabels then
+            seriesWithColors
+                |> List.map (\( color, series ) -> ( color, series.label ))
+                |> addLabels cfg chart
+        else
+            chart
+
+
+addLabels : Config -> Svg msg -> List Labels.LabelEntry -> Svg msg
+addLabels cfg chart labels =
+    Labels.withLabels
+        { background = cfg.background, labelsColor = "#333333" }
+        labels
+        chart
 
 
 initDrawingSettings : Config -> Dataset -> DrawingSettings
 initDrawingSettings cfg dataset =
     let
         points =
-            List.concat dataset
+            List.concatMap .data dataset
 
         xs =
             List.map (\( x, y ) -> x) points
@@ -360,7 +348,7 @@ drawLine transform ( color, series ) =
             toString x ++ " " ++ toString y
 
         attr =
-            series
+            series.data
                 |> List.map (transform >> pointString)
                 |> String.join ", "
     in
@@ -370,7 +358,7 @@ drawLine transform ( color, series ) =
 drawPoints : Transform -> ( Color, Series ) -> Svg msg
 drawPoints transform ( color, series ) =
     g [] <|
-        List.map (drawPoint transform color) series
+        List.map (drawPoint transform color) series.data
 
 
 drawPoint : Transform -> Color -> DataPoint -> Svg msg

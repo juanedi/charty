@@ -7,16 +7,19 @@ import Html.Attributes as Attributes
 import Html.Events as Events
 import Json.Decode as Decode
 import Json.Encode as Encode
+import Layout
 
 
 type Msg
     = DatasetChange String
+    | ToggleLabels
 
 
 type alias Model =
     { input : String
     , inputOk : Bool
     , dataset : LineChart.Dataset
+    , drawLabels : Bool
     }
 
 
@@ -36,67 +39,96 @@ init =
         dataset =
             sampleDataset
     in
-        ( { input = encodeDataset dataset, inputOk = True, dataset = sampleDataset }, Cmd.none )
+        ( { input = encodeDataset dataset, inputOk = True, dataset = sampleDataset, drawLabels = True }, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update (DatasetChange text) model =
-    case Decode.decodeString datasetDecoder text of
-        Result.Ok dataset ->
-            ( { input = text, inputOk = True, dataset = dataset }, Cmd.none )
+update msg model =
+    case msg of
+        DatasetChange text ->
+            case Decode.decodeString datasetDecoder text of
+                Result.Ok dataset ->
+                    ( { model | input = text, inputOk = True, dataset = dataset }, Cmd.none )
 
-        _ ->
-            ( { input = text, inputOk = False, dataset = model.dataset }, Cmd.none )
+                Result.Err _ ->
+                    ( { model | input = text, inputOk = False }, Cmd.none )
+
+        ToggleLabels ->
+            ( { model | drawLabels = not model.drawLabels }, Cmd.none )
 
 
 view : Model -> Html Msg
 view model =
-    Html.div
-        [ Attributes.style
-            [ ( "display", "flex" )
-            , ( "height", "100vh" )
-            , ( "background-color", "#FAFAFA" )
-            ]
-        ]
-        [ Html.div
-            [ Attributes.style
-                [ ( "padding", "10px" )
-                , ( "display", "flex" )
-                , ( "flex-direction", "column" )
-                , ( "width", "370px" )
-                , ( "font-family", "sans-serif" )
-                ]
-            ]
-            [ Html.p [] [ Html.text "The dataset below will be displayed on the right upon validation." ]
-            , Html.textarea
-                [ Attributes.style
-                    [ ( "flex-grow", "1" )
-                    , ( "font-size", "15px" )
+    let
+        defaults =
+            LineChart.defaults
+
+        chart =
+            LineChart.view { defaults | drawLabels = model.drawLabels } model.dataset
+
+        opacity =
+            if model.inputOk then
+                1
+            else
+                0.3
+
+        configTitle title =
+            Html.div [ Attributes.style [ ( "font-weight", "bold" ), ( "margin-bottom", "10px" ) ] ] [ text title ]
+
+        configSection title styles content =
+            Html.div
+                [ Attributes.style <| [ ( "margin-bottom", "20px" ), ( "position", "relative" ) ] ++ styles ]
+                (configTitle title :: content)
+    in
+        Layout.twoColumns
+            [ Html.p
+                []
+                [ Html.text "The dataset below will be displayed on the right upon validation." ]
+            , configSection "Settings" [] <|
+                [ Html.label
+                    []
+                    [ Html.input
+                        [ Attributes.type_ "checkbox"
+                        , Attributes.checked model.drawLabels
+                        , Attributes.style [ ( "margin-right", "15px" ) ]
+                        , Events.onCheck (always ToggleLabels)
+                        ]
+                        []
+                    , text "display labels"
                     ]
-                , Events.onInput DatasetChange
                 ]
-                [ Html.text model.input ]
-            ]
-        , Html.div
-            [ Attributes.style
-                [ ( "flex-grow", "1" )
-                , ( "opacity"
-                  , if model.inputOk then
-                        "1"
-                    else
-                        "0.3"
-                  )
+            , configSection "Data"
+                [ ( "flex-grow", "1" ) ]
+                [ Html.textarea
+                    [ Attributes.style
+                        [ ( "position", "absolute" )
+                        , ( "min-width", "100%" )
+                        , ( "max-width", "100%" )
+                        , ( "height", "90%" )
+                        , ( "font-size", "14px" )
+                        ]
+                    , Events.onInput DatasetChange
+                    ]
+                    [ Html.text model.input ]
                 ]
             ]
-            [ LineChart.view LineChart.defaults model.dataset ]
-        ]
+            (Html.div
+                [ Attributes.style [ ( "opacity", toString opacity ) ] ]
+                [ chart ]
+            )
 
 
 sampleDataset : LineChart.Dataset
 sampleDataset =
-    [ [ ( 100000, 3 ), ( 100001, 4 ), ( 100002, 3 ), ( 100003, 2 ), ( 100004, 1 ), ( 100005, 1 ), ( 100006, -1 ) ]
-    , [ ( 100000, 1 ), ( 100001, 2.5 ), ( 100002, 3 ), ( 100003, 3.5 ), ( 100004, 3 ), ( 100005, 2 ), ( 100006, 0 ) ]
-    , [ ( 100000, 2 ), ( 100001, 1.5 ), ( 100002, 0 ), ( 100003, 3 ), ( 100004, -0.5 ), ( 100005, -1.5 ), ( 100006, -2 ) ]
+    [ { label = "Series 1"
+      , data = [ ( 100000, 3 ), ( 100001, 4 ), ( 100002, 3 ), ( 100003, 2 ), ( 100004, 1 ), ( 100005, 1 ), ( 100006, -1 ) ]
+      }
+    , { label = "Series 2"
+      , data = [ ( 100000, 1 ), ( 100001, 2.5 ), ( 100002, 3 ), ( 100003, 3.5 ), ( 100004, 3 ), ( 100005, 2 ), ( 100006, 0 ) ]
+      }
+    , { label = "Series 3"
+      , data = [ ( 100000, 2 ), ( 100001, 1.5 ), ( 100002, 0 ), ( 100003, 3 ), ( 100004, -0.5 ), ( 100005, -1.5 ), ( 100006, -2 ) ]
+      }
     ]
 
 
@@ -106,8 +138,11 @@ encodeDataset dataset =
         entryEncoder =
             \( x, y ) -> Encode.array (Array.fromList [ Encode.float x, Encode.float y ])
 
-        seriesEncoder =
-            List.map entryEncoder >> Encode.list
+        seriesEncoder series =
+            Encode.object
+                [ ( "label", Encode.string series.label )
+                , ( "data", series.data |> List.map entryEncoder |> Encode.list )
+                ]
 
         datasetEncoder =
             List.map seriesEncoder >> Encode.list
@@ -128,5 +163,10 @@ datasetDecoder =
 
         entryDecoder =
             Decode.array Decode.float |> Decode.andThen arrayToTuple
+
+        seriesDecoder =
+            Decode.map2 (\label data -> { label = label, data = data })
+                (Decode.field "label" Decode.string)
+                (Decode.field "data" (Decode.list entryDecoder))
     in
-        Decode.list <| Decode.list entryDecoder
+        Decode.list <| seriesDecoder
