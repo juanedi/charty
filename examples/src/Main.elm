@@ -1,4 +1,4 @@
-module Home exposing (..)
+module Main exposing (..)
 
 import Charty.LineChart as LineChart
 import Charty.PieChart as PieChart
