@@ -1,0 +1,23 @@
+.links a {
+  margin-bottom: 30px;
+}
+
+@media all and (min-width: 340px) {
+  .links a:not(:last-child) {
+    margin-right: 30px;
+  }
+}
+
+.sample-chart {
+  height: 264px;
+}
+
+.sample-chart i {
+  font-size: 120px;
+  margin: auto;
+}
+
+.sample-chart svg {
+  width: 100%;
+  height: 264px;
+}
