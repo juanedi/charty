@@ -1,4 +1,4 @@
-module LineChartExample exposing (..)
+module LineChartExample exposing (Model, Msg, init, update, view)
 
 import Array
 import Charty.LineChart as LineChart
@@ -23,23 +23,13 @@ type alias Model =
     }
 
 
-main : Program Never Model Msg
-main =
-    Html.program
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = always Sub.none
-        }
-
-
-init : ( Model, Cmd Msg )
+init : Model
 init =
-    let
-        dataset =
-            sampleDataset
-    in
-        ( { input = encodeDataset dataset, inputOk = True, dataset = sampleDataset, drawLabels = True }, Cmd.none )
+    { dataset = sampleDataset
+    , input = encodeDataset sampleDataset
+    , inputOk = True
+    , drawLabels = True
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -50,7 +40,7 @@ update msg model =
                 Result.Ok dataset ->
                     ( { model | input = text, inputOk = True, dataset = dataset }, Cmd.none )
 
-                Result.Err _ ->
+                Result.Err err ->
                     ( { model | input = text, inputOk = False }, Cmd.none )
 
         ToggleLabels ->
@@ -64,7 +54,7 @@ view model =
             LineChart.defaults
 
         chart =
-            LineChart.view { defaults | drawLabels = model.drawLabels } model.dataset
+            LineChart.view { defaults | drawLabels = model.drawLabels } (Debug.log "dataset" model.dataset)
 
         opacity =
             if model.inputOk then

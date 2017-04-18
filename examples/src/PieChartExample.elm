@@ -1,4 +1,4 @@
-module PieChartExample exposing (..)
+module PieChartExample exposing (Model, Msg, init, update, view)
 
 import Charty.PieChart as PieChart exposing (view)
 import Html exposing (Html, div)
@@ -27,27 +27,13 @@ type alias Model =
     }
 
 
-main : Program Never Model Msg
-main =
-    Html.program
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = always Sub.none
-        }
-
-
-init : ( Model, Cmd Msg )
+init : Model
 init =
-    let
-        sampleDataset =
-            { groupA = 30
-            , groupB = 40
-            , groupC = 10
-            , groupD = 20
-            }
-    in
-        ( sampleDataset, Cmd.none )
+    { groupA = 30
+    , groupB = 40
+    , groupC = 10
+    , groupD = 20
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

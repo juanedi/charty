@@ -4,15 +4,24 @@ import Charty.LineChart as LineChart
 import Charty.PieChart as PieChart
 import Html as H exposing (Html)
 import Html.Attributes as HA
+import Html.Events as HE
+import LineChartExample
+import PieChartExample
 import Svg exposing (Svg)
 
 
-type alias Msg =
-    ()
+type Msg
+    = NavigateToLanding
+    | NavigateToLineChart
+    | NavigateToPieChart
+    | LineChartExampleMsg LineChartExample.Msg
+    | PieChartExampleMsg PieChartExample.Msg
 
 
-type alias Model =
-    ()
+type Model
+    = Landing
+    | LineChartExample LineChartExample.Model
+    | PieChartExample PieChartExample.Model
 
 
 main : Program Never Model Msg
@@ -27,16 +36,50 @@ main =
 
 init : ( Model, Cmd Msg )
 init =
-    ( (), Cmd.none )
+    ( Landing, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    ( model, Cmd.none )
+    case ( model, msg ) of
+        ( _, NavigateToLanding ) ->
+            ( Landing, Cmd.none )
+
+        ( _, NavigateToLineChart ) ->
+            ( LineChartExample (LineChartExample.init), Cmd.none )
+
+        ( _, NavigateToPieChart ) ->
+            ( PieChartExample (PieChartExample.init), Cmd.none )
+
+        ( LineChartExample model, LineChartExampleMsg msg ) ->
+            LineChartExample.update msg model
+                |> Tuple.mapFirst LineChartExample
+                |> Tuple.mapSecond (Cmd.map LineChartExampleMsg)
+
+        ( PieChartExample model, PieChartExampleMsg msg ) ->
+            PieChartExample.update msg model
+                |> Tuple.mapFirst PieChartExample
+                |> Tuple.mapSecond (Cmd.map PieChartExampleMsg)
+
+        _ ->
+            Debug.crash "Unexpected msg"
 
 
 view : Model -> Html Msg
 view model =
+    case model of
+        Landing ->
+            landing
+
+        LineChartExample model ->
+            H.map LineChartExampleMsg (LineChartExample.view model)
+
+        PieChartExample model ->
+            H.map PieChartExampleMsg (PieChartExample.view model)
+
+
+landing : Html Msg
+landing =
     H.div
         []
         [ H.nav
@@ -65,28 +108,34 @@ view model =
                 [ HA.class "section" ]
                 [ H.div
                     [ HA.class "row" ]
-                    [ demoLink "Line charts" sampleLineChart "Visualize single or multiple series with their corresponding labels."
-                    , demoLink "Pie charts" samplePieChart "Use these to compare proportions of different slices of your data."
-                    , demoLink "More comming" (icon "add") "Bars, stacked series, deeper customization comming soon."
+                    [ demoLink (Just NavigateToLineChart) "Line charts" sampleLineChart "Visualize single or multiple series with their corresponding labels."
+                    , demoLink (Just NavigateToPieChart) "Pie charts" samplePieChart "Use these to compare proportions of different slices of your data."
+                    , demoLink Nothing "More comming" (icon "add") "Bars, stacked series, deeper customization comming soon."
                     ]
                 ]
             ]
         ]
 
 
-demoLink : String -> Html msg -> String -> Html msg
-demoLink title visual description =
-    H.div
-        [ HA.class "col s12 m4" ]
-        [ H.div
-            [ HA.class "icon-block" ]
-            [ H.h2 [ HA.class "center indigo-text" ]
-                [ H.div [ HA.class "sample-chart valign-wrapper" ] [ visual ]
+demoLink : Maybe Msg -> String -> Html Msg -> String -> Html Msg
+demoLink onClick title visual description =
+    let
+        linkAttributes =
+            onClick
+                |> Maybe.map (\msg -> [ HE.onClick msg, HA.style [ ( "cursor", "pointer" ) ] ])
+                |> Maybe.withDefault []
+    in
+        H.div
+            (HA.class "col s12 m4" :: linkAttributes)
+            [ H.div
+                [ HA.class "icon-block" ]
+                [ H.h2 [ HA.class "center indigo-text" ]
+                    [ H.div [ HA.class "sample-chart valign-wrapper" ] [ visual ]
+                    ]
+                , H.h5 [ HA.class "center" ] [ H.text title ]
+                , H.p [ HA.class "light" ] [ H.text description ]
                 ]
-            , H.h5 [ HA.class "center" ] [ H.text title ]
-            , H.p [ HA.class "light" ] [ H.text description ]
             ]
-        ]
 
 
 icon : String -> Html msg
