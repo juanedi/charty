@@ -1,6 +1,6 @@
 module Charty.Labels exposing (LabelEntry, withLabels)
 
-import Charty.Common exposing (Color)
+import Charty.Color exposing (Color)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 
@@ -15,8 +15,8 @@ type alias Config =
     }
 
 
-withLabels : Config -> Svg msg -> List LabelEntry -> Svg msg
-withLabels config chart labels =
+withLabels : Config -> List LabelEntry -> Svg msg -> Svg msg
+withLabels config labels chart =
     let
         background =
             Svg.rect [ width "1450", height "1000", fill config.background ] []

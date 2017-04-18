@@ -2,28 +2,15 @@ module Charty.PieChart
     exposing
         ( Dataset
         , Group
-        , Color
         , Config
         , defaults
         , view
         )
 
-import Charty.Common as Common
+import Charty.Color as Color exposing (Color)
 import Charty.Labels as Labels exposing (LabelEntry)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
-
-
-type alias Color =
-    -- TODO: use common definition
-    String
-
-
-type alias Slice =
-    { label : String
-    , percentage : Float
-    , color : Color
-    }
 
 
 type alias Dataset =
@@ -42,13 +29,39 @@ type alias Config =
     }
 
 
+type alias Slice =
+    { label : String
+    , percentage : Float
+    , color : Color
+    }
+
+
 defaults : Config
 defaults =
     { background = "#FAFAFA"
     , labelsColor = "#333333"
     , maxGroupCount = Just 8
-    , colorAssignment = Common.withDefaultColors
+    , colorAssignment = Color.assignDefaults
     }
+
+
+view : Config -> Dataset -> Svg msg
+view config dataset =
+    let
+        slices =
+            preprocess config dataset
+    in
+        Labels.withLabels
+            { background = config.background
+            , labelsColor = config.labelsColor
+            }
+            (List.map label slices)
+            (drawSlices config slices)
+
+
+label : Slice -> LabelEntry
+label s =
+    ( s.color, s.label )
 
 
 preprocess : Config -> Dataset -> List Slice
@@ -65,16 +78,6 @@ preprocess config dataset =
                 , percentage = percentage
                 }
             )
-
-
-sumValues : Dataset -> Float
-sumValues dataset =
-    case dataset of
-        [] ->
-            0
-
-        ( _, value ) :: rest ->
-            value + (sumValues rest)
 
 
 normalize : Dataset -> Dataset
@@ -105,14 +108,9 @@ truncate maxGroupCount dataset =
                         ++ [ ( "Other", sumValues rest ) ]
 
 
-accumulateStart : Float -> List Slice -> List ( Float, Slice )
-accumulateStart start slices =
-    case slices of
-        [] ->
-            []
-
-        s :: ss ->
-            ( start, s ) :: (accumulateStart (start + s.percentage) ss)
+sumValues : Dataset -> Float
+sumValues =
+    List.foldr (\( _, value ) s -> value + s) 0
 
 
 drawSlice : Config -> Float -> Slice -> Svg msg
@@ -169,24 +167,19 @@ circumferencePoint percentage =
         ( 500 * (1 + sin ang), 500 * (1 - cos ang) )
 
 
-view : Config -> Dataset -> Svg msg
-view config dataset =
-    let
-        slices =
-            preprocess config dataset
-
-        chart =
-            drawSlices config slices
-
-        labels =
-            List.map (\s -> ( s.color, s.label )) slices
-    in
-        Labels.withLabels { background = config.background, labelsColor = config.labelsColor } chart labels
-
-
 drawSlices : Config -> List Slice -> Svg msg
 drawSlices config slices =
     slices
         |> accumulateStart 0
         |> List.map (uncurry (drawSlice config))
         |> Svg.svg [ viewBox "0 0 1000 1000", width "1000" ]
+
+
+accumulateStart : Float -> List Slice -> List ( Float, Slice )
+accumulateStart start slices =
+    case slices of
+        [] ->
+            []
+
+        s :: ss ->
+            ( start, s ) :: (accumulateStart (start + s.percentage) ss)

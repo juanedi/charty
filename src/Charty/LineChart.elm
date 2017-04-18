@@ -3,7 +3,6 @@ module Charty.LineChart
         ( Dataset
         , Series
         , DataPoint
-        , Color
         , Config
         , defaults
         , view
@@ -17,7 +16,6 @@ module Charty.LineChart
 @docs DataPoint
 
 # Settings
-@docs Color
 @docs Config
 @docs defaults
 
@@ -27,7 +25,7 @@ module Charty.LineChart
 
 import Array exposing (Array)
 import Charty.ArrayUtil as ArrayUtil
-import Charty.Common as Common
+import Charty.Color as Color exposing (Color)
 import Charty.Labels as Labels
 import Charty.SelectList as SL exposing (include, maybe)
 import Regex
@@ -62,13 +60,6 @@ type alias SvgPoint =
 
 type alias Transform =
     DataPoint -> SvgPoint
-
-
-{-| The color used to draw a line. For the moment, any string used to specify
-SVG colors is valid, so things such as "red" and "#FF0000" should work.
--}
-type alias Color =
-    String
 
 
 {-| Configuration for how the chart will be drawn. Note that
@@ -115,7 +106,7 @@ defaults : Config
 defaults =
     { drawPoints = True
     , background = "#FAFAFA"
-    , colorAssignment = Common.withDefaultColors
+    , colorAssignment = Color.assignDefaults
     , labelPrecision = 2
     , drawLabels = True
     }
@@ -167,14 +158,21 @@ view cfg dataset =
                 , g [] lines
                 , g [] points
                 ]
-
-        labels =
-            List.map (\( color, series ) -> ( color, series.label )) seriesWithColors
     in
         if cfg.drawLabels then
-            Labels.withLabels { background = cfg.background, labelsColor = "#333333" } chart labels
+            seriesWithColors
+                |> List.map (\( color, series ) -> ( color, series.label ))
+                |> addLabels cfg chart
         else
             chart
+
+
+addLabels : Config -> Svg msg -> List Labels.LabelEntry -> Svg msg
+addLabels cfg chart labels =
+    Labels.withLabels
+        { background = cfg.background, labelsColor = "#333333" }
+        labels
+        chart
 
 
 initDrawingSettings : Config -> Dataset -> DrawingSettings

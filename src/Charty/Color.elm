@@ -1,9 +1,16 @@
-module Charty.Common exposing (withDefaultColors, Color)
+module Charty.Color
+    exposing
+        ( Color
+        , assignDefaults
+        )
 
 import Array exposing (Array)
 import Charty.ArrayUtil as ArrayUtil
 
 
+{-| The color used to draw a line. For the moment, any string used to specify
+SVG colors is valid, so things such as "red" and "#FF0000" should work.
+-}
 type alias Color =
     String
 
@@ -23,8 +30,8 @@ defaultColorPalette =
         ]
 
 
-withDefaultColors : List a -> List ( Color, a )
-withDefaultColors dataset =
+assignDefaults : List a -> List ( Color, a )
+assignDefaults dataset =
     let
         colorCount =
             Array.length defaultColorPalette
