@@ -72,27 +72,42 @@ view model =
             landing
 
         LineChartExample model ->
-            example <| H.map LineChartExampleMsg (LineChartExample.view model)
+            example NavigateToLineChart <| H.map LineChartExampleMsg (LineChartExample.view model)
 
         PieChartExample model ->
-            example <| H.map PieChartExampleMsg (PieChartExample.view model)
+            example NavigateToPieChart <| H.map PieChartExampleMsg (PieChartExample.view model)
 
 
-example : Html Msg -> Html Msg
-example content =
-    H.div
-        []
-        [ H.nav
-            [ HA.class "indigo darken-1" ]
-            [ H.div
-                [ HA.class "nav-wrapper container" ]
-                [ H.a [ HA.class "brand-logo", HA.href "#", HE.onClick NavigateToLanding ] [ H.text "Charty" ]
+example : Msg -> Html Msg -> Html Msg
+example currentMenuLink content =
+    let
+        menuItem link label =
+            H.li
+                [ HA.classList [ ( "active", link == currentMenuLink ) ]
                 ]
+                [ H.a
+                    [ HA.href "#", HE.onClick link ]
+                    [ H.text label ]
+                ]
+    in
+        H.div
+            []
+            [ H.nav
+                [ HA.class "indigo darken-1" ]
+                [ H.div
+                    [ HA.class "nav-wrapper container" ]
+                    [ H.a [ HA.class "brand-logo", HA.href "#", HE.onClick NavigateToLanding ] [ H.text "Charty" ]
+                    , H.ul
+                        [ HA.class "right hide-on-med-and-down" ]
+                        [ menuItem NavigateToLineChart "Line Chart"
+                        , menuItem NavigateToPieChart "Pie Chart"
+                        ]
+                    ]
+                ]
+            , H.div
+                [ HA.class "section container chart-demo" ]
+                [ content ]
             ]
-        , H.div
-            [ HA.class "section container chart-demo" ]
-            [ content ]
-        ]
 
 
 landing : Html Msg
