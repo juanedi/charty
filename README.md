@@ -8,7 +8,7 @@ This library aims to provide native (as in "no js interop needed") SVG charts fo
 Truth be told, for the moment only line and pie charts are supported. That will change soon :-)
 
 Please check out the [live demo](https://juanedi.github.io/charty/) and
-[documentation](http://package.elm-lang.org/packages/juanedi/charty/1.0.0) to learn how to use it.
+[documentation](http://package.elm-lang.org/packages/juanedi/charty/latest) to learn how to use it.
 
 ## API overview
 
