@@ -54,49 +54,39 @@ view model =
             LineChart.defaults
 
         chart =
-            LineChart.view { defaults | drawLabels = model.drawLabels } (Debug.log "dataset" model.dataset)
+            LineChart.view { defaults | drawLabels = model.drawLabels } model.dataset
 
         opacity =
             if model.inputOk then
                 1
             else
                 0.3
-
-        configTitle title =
-            Html.div [ Attributes.style [ ( "font-weight", "bold" ), ( "margin-bottom", "10px" ) ] ] [ text title ]
-
-        configSection title styles content =
-            Html.div
-                [ Attributes.style <| [ ( "margin-bottom", "20px" ), ( "position", "relative" ) ] ++ styles ]
-                (configTitle title :: content)
     in
         Layout.twoColumns
-            [ Html.p
-                []
-                [ Html.text "The dataset below will be displayed on the right upon validation." ]
-            , configSection "Settings" [] <|
-                [ Html.label
+            [ Html.p [] [ Html.text "The dataset below will be displayed on the right upon validation." ]
+            , Html.div
+                [ Attributes.class "config-section" ]
+                [ Html.div [ Attributes.class "title" ] [ text "Settings" ]
+                , Html.p
                     []
                     [ Html.input
                         [ Attributes.type_ "checkbox"
                         , Attributes.checked model.drawLabels
-                        , Attributes.style [ ( "margin-right", "15px" ) ]
+                        , Attributes.id "toggle-labels"
                         , Events.onCheck (always ToggleLabels)
                         ]
                         []
-                    , text "display labels"
+                    , Html.label
+                        [ Attributes.for "toggle-labels" ]
+                        [ Html.text "display labels" ]
                     ]
                 ]
-            , configSection "Data"
-                [ ( "flex-grow", "1" ) ]
-                [ Html.textarea
-                    [ Attributes.style
-                        [ ( "position", "absolute" )
-                        , ( "min-width", "100%" )
-                        , ( "max-width", "100%" )
-                        , ( "height", "90%" )
-                        , ( "font-size", "14px" )
-                        ]
+            , Html.div
+                [ Attributes.class "config-section" ]
+                [ Html.div [ Attributes.class "title", Attributes.style [ ( "flex-grow", "1" ) ] ] [ text "Data" ]
+                , Html.textarea
+                    [ Attributes.class "dataset-editor"
+                    , Attributes.style [ ( "height", "50vh" ) ]
                     , Events.onInput DatasetChange
                     ]
                     [ Html.text model.input ]

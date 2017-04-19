@@ -72,10 +72,27 @@ view model =
             landing
 
         LineChartExample model ->
-            H.map LineChartExampleMsg (LineChartExample.view model)
+            example <| H.map LineChartExampleMsg (LineChartExample.view model)
 
         PieChartExample model ->
-            H.map PieChartExampleMsg (PieChartExample.view model)
+            example <| H.map PieChartExampleMsg (PieChartExample.view model)
+
+
+example : Html Msg -> Html Msg
+example content =
+    H.div
+        []
+        [ H.nav
+            [ HA.class "indigo darken-1" ]
+            [ H.div
+                [ HA.class "nav-wrapper container" ]
+                [ H.a [ HA.class "brand-logo", HA.href "#", HE.onClick NavigateToLanding ] [ H.text "Charty" ]
+                ]
+            ]
+        , H.div
+            [ HA.class "section container chart-demo" ]
+            [ content ]
+        ]
 
 
 landing : Html Msg

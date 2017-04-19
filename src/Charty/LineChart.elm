@@ -105,7 +105,7 @@ color palette is used.
 defaults : Config
 defaults =
     { drawPoints = True
-    , background = "#FAFAFA"
+    , background = "#FFFFFF"
     , colorAssignment = Color.assignDefaults
     , labelPrecision = 2
     , drawLabels = True
