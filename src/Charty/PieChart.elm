@@ -38,7 +38,7 @@ type alias Slice =
 
 defaults : Config
 defaults =
-    { background = "#FFFFFF"
+    { background = "transparent"
     , labelsColor = "#333333"
     , maxGroupCount = Just 8
     , colorAssignment = Color.assignDefaults
