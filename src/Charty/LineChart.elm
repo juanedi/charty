@@ -150,9 +150,9 @@ view cfg dataset =
             else
                 []
 
-        chart =
+        chart attrs =
             Svg.svg
-                [ width "1000", viewBox "0 0 1000 1000" ]
+                (viewBox "0 0 1000 1000" :: attrs)
                 [ background
                 , axis cfg drawingSettings
                 , g [] lines
@@ -162,9 +162,9 @@ view cfg dataset =
         if cfg.drawLabels then
             seriesWithColors
                 |> List.map (\( color, series ) -> ( color, series.label ))
-                |> addLabels cfg chart
+                |> addLabels cfg (chart [ width "1000" ])
         else
-            chart
+            chart [ width "100%", height "100%" ]
 
 
 addLabels : Config -> Svg msg -> List Labels.LabelEntry -> Svg msg

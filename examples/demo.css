@@ -17,12 +17,6 @@
   margin: auto;
 }
 
-.sample-chart svg {
-  width: 100%;
-  height: 264px;
-}
-
-
 .chart-demo .demo-two-columns {
   display: flex;
   height: 100vh;
