@@ -39,4 +39,6 @@ view model =
 ```
 
 Of course, the dataset itself can be part of your model so that the chart is redrawn every time your data changes.
-The `examples` directory shows this behaviour. Please read the docs for detail usage instructions of other charts too.
+The `examples` directory shows this behaviour.
+
+Please read the docs for detailed usage instructions of other charts too.
