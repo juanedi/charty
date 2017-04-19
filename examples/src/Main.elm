@@ -142,7 +142,7 @@ landing =
                     [ HA.class "row" ]
                     [ demoLink (Just NavigateToLineChart) "Line charts" sampleLineChart "Visualize single or multiple series with their corresponding labels."
                     , demoLink (Just NavigateToPieChart) "Pie charts" samplePieChart "Use these to compare proportions of different slices of your data."
-                    , demoLink Nothing "More comming" (icon "add") "Bars, stacked series, deeper customization comming soon."
+                    , demoLink Nothing "More coming" (icon "add") "Bars, stacked series, deeper customization comming soon."
                     ]
                 ]
             ]
