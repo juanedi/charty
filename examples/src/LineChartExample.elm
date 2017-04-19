@@ -13,12 +13,14 @@ import Layout
 type Msg
     = DatasetChange String
     | ToggleLabels
+    | TogglePoints
 
 
 type alias Model =
     { input : String
     , inputOk : Bool
     , dataset : LineChart.Dataset
+    , drawPoints : Bool
     , drawLabels : Bool
     }
 
@@ -28,6 +30,7 @@ init =
     { dataset = sampleDataset
     , input = encodeDataset sampleDataset
     , inputOk = True
+    , drawPoints = True
     , drawLabels = True
     }
 
@@ -43,6 +46,9 @@ update msg model =
                 Result.Err err ->
                     ( { model | input = text, inputOk = False }, Cmd.none )
 
+        TogglePoints ->
+            ( { model | drawPoints = not model.drawPoints }, Cmd.none )
+
         ToggleLabels ->
             ( { model | drawLabels = not model.drawLabels }, Cmd.none )
 
@@ -54,32 +60,41 @@ view model =
             LineChart.defaults
 
         chart =
-            LineChart.view { defaults | drawLabels = model.drawLabels } model.dataset
+            LineChart.view
+                { defaults
+                    | drawPoints = model.drawPoints
+                    , drawLabels = model.drawLabels
+                }
+                model.dataset
 
         opacity =
             if model.inputOk then
                 1
             else
                 0.3
+
+        toggle msg getter field =
+            Html.p
+                []
+                [ Html.input
+                    [ Attributes.type_ "checkbox"
+                    , Attributes.checked (getter model)
+                    , Attributes.id ("toggle-" ++ field)
+                    , Events.onCheck (always msg)
+                    ]
+                    []
+                , Html.label
+                    [ Attributes.for ("toggle-" ++ field) ]
+                    [ Html.text ("display " ++ field) ]
+                ]
     in
         Layout.twoColumns
             [ Html.p [] [ Html.text "The dataset below will be displayed on the right upon validation." ]
             , Html.div
                 [ Attributes.class "config-section" ]
                 [ Html.div [ Attributes.class "title" ] [ text "Settings" ]
-                , Html.p
-                    []
-                    [ Html.input
-                        [ Attributes.type_ "checkbox"
-                        , Attributes.checked model.drawLabels
-                        , Attributes.id "toggle-labels"
-                        , Events.onCheck (always ToggleLabels)
-                        ]
-                        []
-                    , Html.label
-                        [ Attributes.for "toggle-labels" ]
-                        [ Html.text "display labels" ]
-                    ]
+                , toggle TogglePoints .drawPoints "points"
+                , toggle ToggleLabels .drawLabels "labels"
                 ]
             , Html.div
                 [ Attributes.class "config-section" ]
