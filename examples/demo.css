@@ -1,0 +1,52 @@
+.links a {
+  margin-bottom: 30px;
+}
+
+@media all and (min-width: 340px) {
+  .links a:not(:last-child) {
+    margin-right: 30px;
+  }
+}
+
+.sample-chart {
+  height: 264px;
+}
+
+.sample-chart i {
+  font-size: 120px;
+  margin: auto;
+}
+
+.chart-demo .demo-two-columns {
+  display: flex;
+  height: 100vh;
+}
+
+.chart-demo .demo-two-columns .controls {
+  display: flex;
+  flex-direction: column;
+  width: 370px;
+}
+
+.chart-demo .demo-two-columns .controls .config-section {
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.chart-demo .demo-two-columns .controls .config-section .title {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.chart-demo .demo-two-columns .controls .dataset-editor {
+  position: absolute;
+  resize: none;
+  width: 100%;
+  font-size: 13px;
+}
+
+
+.chart-demo .demo-two-columns .chart {
+  flex-grow: 1;
+  padding: 60px 0 0 100px;
+}

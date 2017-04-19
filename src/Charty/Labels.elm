@@ -22,7 +22,7 @@ withLabels config labels chart =
             Svg.rect [ width "1450", height "1000", fill config.background ] []
     in
         Svg.svg
-            [ viewBox "0 0 1450 1000" ]
+            [ viewBox "0 0 1450 1000", Svg.Attributes.style "width: 100%; height:auto;" ]
             [ background, chart, drawLabels config labels ]
 
 

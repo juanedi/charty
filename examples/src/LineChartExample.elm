@@ -1,4 +1,4 @@
-module LineChartExample exposing (..)
+module LineChartExample exposing (Model, Msg, init, update, view)
 
 import Array
 import Charty.LineChart as LineChart
@@ -13,33 +13,26 @@ import Layout
 type Msg
     = DatasetChange String
     | ToggleLabels
+    | TogglePoints
 
 
 type alias Model =
     { input : String
     , inputOk : Bool
     , dataset : LineChart.Dataset
+    , drawPoints : Bool
     , drawLabels : Bool
     }
 
 
-main : Program Never Model Msg
-main =
-    Html.program
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = always Sub.none
-        }
-
-
-init : ( Model, Cmd Msg )
+init : Model
 init =
-    let
-        dataset =
-            sampleDataset
-    in
-        ( { input = encodeDataset dataset, inputOk = True, dataset = sampleDataset, drawLabels = True }, Cmd.none )
+    { dataset = sampleDataset
+    , input = encodeDataset sampleDataset
+    , inputOk = True
+    , drawPoints = True
+    , drawLabels = True
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -50,8 +43,11 @@ update msg model =
                 Result.Ok dataset ->
                     ( { model | input = text, inputOk = True, dataset = dataset }, Cmd.none )
 
-                Result.Err _ ->
+                Result.Err err ->
                     ( { model | input = text, inputOk = False }, Cmd.none )
+
+        TogglePoints ->
+            ( { model | drawPoints = not model.drawPoints }, Cmd.none )
 
         ToggleLabels ->
             ( { model | drawLabels = not model.drawLabels }, Cmd.none )
@@ -64,7 +60,12 @@ view model =
             LineChart.defaults
 
         chart =
-            LineChart.view { defaults | drawLabels = model.drawLabels } model.dataset
+            LineChart.view
+                { defaults
+                    | drawPoints = model.drawPoints
+                    , drawLabels = model.drawLabels
+                }
+                model.dataset
 
         opacity =
             if model.inputOk then
@@ -72,41 +73,35 @@ view model =
             else
                 0.3
 
-        configTitle title =
-            Html.div [ Attributes.style [ ( "font-weight", "bold" ), ( "margin-bottom", "10px" ) ] ] [ text title ]
-
-        configSection title styles content =
-            Html.div
-                [ Attributes.style <| [ ( "margin-bottom", "20px" ), ( "position", "relative" ) ] ++ styles ]
-                (configTitle title :: content)
+        toggle msg getter field =
+            Html.p
+                []
+                [ Html.input
+                    [ Attributes.type_ "checkbox"
+                    , Attributes.checked (getter model)
+                    , Attributes.id ("toggle-" ++ field)
+                    , Events.onCheck (always msg)
+                    ]
+                    []
+                , Html.label
+                    [ Attributes.for ("toggle-" ++ field) ]
+                    [ Html.text ("display " ++ field) ]
+                ]
     in
         Layout.twoColumns
-            [ Html.p
-                []
-                [ Html.text "The dataset below will be displayed on the right upon validation." ]
-            , configSection "Settings" [] <|
-                [ Html.label
-                    []
-                    [ Html.input
-                        [ Attributes.type_ "checkbox"
-                        , Attributes.checked model.drawLabels
-                        , Attributes.style [ ( "margin-right", "15px" ) ]
-                        , Events.onCheck (always ToggleLabels)
-                        ]
-                        []
-                    , text "display labels"
-                    ]
+            [ Html.p [] [ Html.text "The dataset below will be displayed on the right upon validation." ]
+            , Html.div
+                [ Attributes.class "config-section" ]
+                [ Html.div [ Attributes.class "title" ] [ text "Settings" ]
+                , toggle TogglePoints .drawPoints "points"
+                , toggle ToggleLabels .drawLabels "labels"
                 ]
-            , configSection "Data"
-                [ ( "flex-grow", "1" ) ]
-                [ Html.textarea
-                    [ Attributes.style
-                        [ ( "position", "absolute" )
-                        , ( "min-width", "100%" )
-                        , ( "max-width", "100%" )
-                        , ( "height", "90%" )
-                        , ( "font-size", "14px" )
-                        ]
+            , Html.div
+                [ Attributes.class "config-section" ]
+                [ Html.div [ Attributes.class "title", Attributes.style [ ( "flex-grow", "1" ) ] ] [ text "Data" ]
+                , Html.textarea
+                    [ Attributes.class "dataset-editor"
+                    , Attributes.style [ ( "height", "50vh" ) ]
                     , Events.onInput DatasetChange
                     ]
                     [ Html.text model.input ]
