@@ -7,20 +7,48 @@ module Charty.PieChart
         , view
         )
 
+{-| This module is in charge of drawing pie charts.
+
+# Data representation
+@docs Dataset
+@docs Group
+
+# Settings
+@docs Config
+@docs defaults
+
+# Drawing
+@docs view
+-}
+
 import Charty.Color as Color exposing (Color)
 import Charty.Labels as Labels exposing (LabelEntry)
 import Svg exposing (..)
 import Svg.Attributes exposing (..)
 
 
+{-| A dataset is just a list of groups.
+-}
 type alias Dataset =
     List Group
 
 
+{-| A group that will be drawn in the chart. Note that depending on the
+`maxGroupCount` setting, a group may end up being grouped with others in an
+"Others" slice of the pie.
+-}
 type alias Group =
     ( String, Float )
 
 
+{-| Configuration for how the chart will be drawn. Note that
+[`PieChart.defaults`](Charty-PieChart#defaults) can be used as a base
+configuration.
+
+If the color assignment is changed and a `maxGroupCount` is specified, keep in
+mind that the dataset passed to the function may have some of your groups merged
+into a single "Others" category.
+-}
 type alias Config =
     { background : Color
     , labelsColor : Color
@@ -36,6 +64,9 @@ type alias Slice =
     }
 
 
+{-| Default configuration. At most 8 slices will be drawn and a default color
+palette is used.
+-}
 defaults : Config
 defaults =
     { background = "transparent"
@@ -45,6 +76,24 @@ defaults =
     }
 
 
+{-| This function generates svg markup for the chart, provided a the necessary
+configuration and dataset. Example usage:
+
+    sampleDataset : PieChart.Dataset
+    sampleDataset =
+        [ ( "Group A", 40.0 )
+        , ( "Group B", 25.0 )
+        , ( "Group C", 35.0 )
+        ]
+
+    view : Model -> Html Msg
+    view model =
+        Html.div
+          []
+          [ Html.p [] [ Html.text "Wow!" ]
+          , PieChart.view PieChart.defaults dataset
+          ]
+-}
 view : Config -> Dataset -> Svg msg
 view config dataset =
     let

@@ -63,7 +63,7 @@ type alias Transform =
 
 
 {-| Configuration for how the chart will be drawn. Note that
-[`LineChart.defaults`](Charty.LineChart#defaults) can be used as a base
+[`LineChart.defaults`](Charty-LineChart#defaults) can be used as a base
 configuration.
 -}
 type alias Config =
