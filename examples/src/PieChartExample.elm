@@ -60,7 +60,7 @@ view model =
 
         colorAssignment =
             -- Keep color assignment consistent with respect to group names
-            List.sortBy (\( label, _ ) -> label) >> defaults.colorAssignment
+            List.sortBy (\{ label } -> label) >> defaults.colorAssignment
 
         chartConfig =
             { defaults | colorAssignment = colorAssignment }
@@ -91,10 +91,10 @@ groupSlider model group =
 
 buildDataset : Model -> PieChart.Dataset
 buildDataset model =
-    [ ( label A, model.groupA )
-    , ( label B, model.groupB )
-    , ( label C, model.groupC )
-    , ( label D, model.groupD )
+    [ { label = label A, value = model.groupA }
+    , { label = label B, value = model.groupB }
+    , { label = label C, value = model.groupC }
+    , { label = label D, value = model.groupD }
     ]
 
 

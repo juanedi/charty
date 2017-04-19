@@ -200,9 +200,9 @@ samplePieChart : Svg msg
 samplePieChart =
     let
         dataset =
-            [ ( "Group A", 20 )
-            , ( "Group B", 10 )
-            , ( "Group C", 70 )
+            [ { label = "Group A", value = 20 }
+            , { label = "Group B", value = 10 }
+            , { label = "Group C", value = 70 }
             ]
 
         defaults =

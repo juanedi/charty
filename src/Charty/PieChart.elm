@@ -38,7 +38,7 @@ type alias Dataset =
 "Others" slice of the pie.
 -}
 type alias Group =
-    ( String, Float )
+    { label : String, value : Float }
 
 
 {-| Configuration for how the chart will be drawn. Note that
@@ -117,14 +117,14 @@ preprocess : Config -> Dataset -> List Slice
 preprocess config dataset =
     dataset
         |> normalize
-        |> List.sortBy (\( _, value ) -> -value)
+        |> List.sortBy (\{ value } -> -value)
         |> truncate config.maxGroupCount
         |> config.colorAssignment
         |> List.map
-            (\( color, ( label, percentage ) ) ->
+            (\( color, { label, value } ) ->
                 { color = color
                 , label = label
-                , percentage = percentage
+                , percentage = value
                 }
             )
 
@@ -135,7 +135,7 @@ normalize dataset =
         sum =
             sumValues dataset
     in
-        List.map (\( label, value ) -> ( label, 100 * value / sum )) dataset
+        List.map (\{ label, value } -> { label = label, value = 100 * value / sum }) dataset
 
 
 truncate : Maybe Int -> Dataset -> Dataset
@@ -154,12 +154,12 @@ truncate maxGroupCount dataset =
 
                 rest ->
                     (List.take (n - 1) dataset)
-                        ++ [ ( "Other", sumValues rest ) ]
+                        ++ [ { label = "Other", value = sumValues rest } ]
 
 
 sumValues : Dataset -> Float
 sumValues =
-    List.foldr (\( _, value ) s -> value + s) 0
+    List.foldr (\{ value } s -> value + s) 0
 
 
 drawSlice : Config -> Float -> Slice -> Svg msg
